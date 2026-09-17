@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ask-tui 第 3 阶段开发报告</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #21262d;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.7; }
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .report-header { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2.5rem; }
+  .report-header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .report-header .subtitle { color: var(--text-dim); font-size: 0.95rem; }
+  .badge-row { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 1rem; font-size: 0.8rem; font-family: var(--mono); border: 1px solid var(--border); background: var(--surface); }
+  .badge.green { color: var(--green); border-color: rgba(63,185,80,0.3); }
+  .badge.blue { color: var(--accent); border-color: rgba(88,166,255,0.3); }
+  .badge.yellow { color: var(--yellow); border-color: rgba(210,153,34,0.3); }
+  .badge.red { color: var(--red); border-color: rgba(248,81,73,0.3); }
+  section { margin-bottom: 2.5rem; }
+  h2 { font-size: 1.35rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  h2 .num { color: var(--accent); font-family: var(--mono); font-size: 0.85rem; background: rgba(88,166,255,0.1); padding: 0.15rem 0.5rem; border-radius: 0.3rem; }
+  h3 { font-size: 1.05rem; margin: 1.2rem 0 0.6rem; }
+  p { margin-bottom: 0.7rem; }
+  ul { margin-left: 1.5rem; margin-bottom: 0.7rem; }
+  li { margin-bottom: 0.3rem; color: var(--text-dim); }
+  li strong { color: var(--text); }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.2rem; overflow-x: auto; margin: 0.8rem 0 1.2rem; font-size: 0.85rem; }
+  code { font-family: var(--mono); font-size: 0.85rem; }
+  p code, li code, td code { background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 0.25rem; color: var(--accent); }
+  pre code { background: none; padding: 0; color: var(--text); }
+  table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1.2rem; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-dim); font-weight: 600; }
+  tr:hover td { background: var(--surface); }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 0.6rem; padding: 1rem 1.2rem; }
+  .card .label { color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card .value { font-size: 1.6rem; font-weight: 700; margin-top: 0.3rem; }
+  .card .value.green { color: var(--green); }
+  .card .value.blue { color: var(--accent); }
+  .card .value.red { color: var(--red); }
+  .card .desc { color: var(--text-dim); font-size: 0.82rem; margin-top: 0.3rem; }
+  .callout { border-left: 3px solid var(--accent); background: rgba(88,166,255,0.06); padding: 0.8rem 1.2rem; border-radius: 0 0.4rem 0.4rem 0; margin: 1rem 0; }
+  .callout.warn { border-color: var(--yellow); background: rgba(210,153,34,0.06); }
+  .file-tree { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.5rem; font-family: var(--mono); font-size: 0.82rem; line-height: 1.5; margin: 0.8rem 0; color: var(--text-dim); }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .new { color: var(--green); }
+  .action-flow { display: flex; flex-direction: column; gap: 0.4rem; margin: 1rem 0; }
+  .action-step { display: flex; align-items: center; gap: 0.6rem; font-family: var(--mono); font-size: 0.82rem; }
+  .action-step .arrow { color: var(--text-dim); }
+  .tag { padding: 0.15rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; }
+  .tag.allow { background: rgba(63,185,80,0.15); color: var(--green); }
+  .tag.confirm { background: rgba(210,153,34,0.15); color: var(--yellow); }
+  .tag.block { background: rgba(248,81,73,0.15); color: var(--red); }
+  .report-footer { border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 3rem; color: var(--text-dim); font-size: 0.82rem; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="report-header">
+  <h1>ask-tui 第 3 阶段开发报告</h1>
+  <div class="subtitle">命令安全检查 · 本地执行 · 部署配置 · 打包分发</div>
+  <div class="badge-row">
+    <span class="badge green">117 tests passed</span>
+    <span class="badge red">Safety Checker</span>
+    <span class="badge yellow">PyInstaller</span>
+    <span class="badge blue">Docker + Render</span>
+    <span class="badge">v0.3.0</span>
+  </div>
+</div>
+
+<section>
+  <h2><span class="num">概览</span></h2>
+  <p>第 3 阶段完成了从"生成命令"到"执行命令"的完整闭环。新增 <strong>命令安全检查器</strong>（三层防护：BLOCK / CONFIRM / ALLOW），TUI 端 <strong>命令执行功能</strong>（确认弹窗 + subprocess + 输出展示），<strong>部署配置</strong>（Dockerfile + Render Blueprint），以及 <strong>PyInstaller 打包方案</strong>。全部 117 个自动化测试通过。</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="label">新增文件</div>
+      <div class="value blue">9</div>
+      <div class="desc">safety_checker / Dockerfile / render.yaml / .spec 等</div>
+    </div>
+    <div class="card">
+      <div class="label">新增测试用例</div>
+      <div class="value green">51</div>
+      <div class="desc">安全检查器全路径覆盖</div>
+    </div>
+    <div class="card">
+      <div class="label">测试总数</div>
+      <div class="value green">117</div>
+      <div class="desc">Phase 1-3 全部通过</div>
+    </div>
+    <div class="card">
+      <div class="label">安全模式</div>
+      <div class="value red">3 层</div>
+      <div class="desc">BLOCK + CONFIRM + ALLOW</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">01</span> 命令安全检查器</h2>
+  <p><code>safety_checker.py</code> 是 TUI 端的命令执行前安全审查模块。通过正则模式匹配 + AI danger_level 联动，将命令分为三种操作级别：</p>
+
+  <div class="action-flow">
+    <div class="action-step">
+      <span class="tag block">BLOCK</span>
+      <span>禁止执行，直接阻止（rm -rf /, mkfs, dd of=/dev/, shutdown 等）</span>
+    </div>
+    <div class="action-step">
+      <span class="tag confirm">CONFIRM</span>
+      <span>弹出确认弹窗，用户确认后执行（rm -f, chmod 777, git push --force 等）</span>
+    </div>
+    <div class="action-step">
+      <span class="tag allow">ALLOW</span>
+      <span>安全命令，直接执行（ls, cat, grep, find, git status 等）</span>
+    </div>
+  </div>
+
+  <h3>1.1 检测维度</h3>
+  <table>
+    <thead><tr><th>检测维度</th><th>模式数量</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>BLOCKED_PATTERNS</td><td>15</td><td>禁止执行的命令模式（格式化、关机、fork bomb 等）</td></tr>
+      <tr><td>CONFIRM_PATTERNS</td><td>17</td><td>需要确认的命令模式（删除、强制推送、远程脚本等）</td></tr>
+      <tr><td>INJECTION_PATTERNS</td><td>6</td><td>命令注入检测（反引号、$()、eval 等）</td></tr>
+      <tr><td>SENSITIVE_PATHS</td><td>10</td><td>敏感目录列表（/etc, /sys, /boot, /dev 等）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.2 AI danger_level 联动</h3>
+  <p>安全检查器不仅依赖正则匹配，还结合 AI 返回的 <code>danger_level</code> 字段做联动决策：</p>
+  <ul>
+    <li><strong>BLOCK 优先</strong>：即使 AI 说 safe，<code>rm -rf /</code> 仍然 BLOCK</li>
+    <li><strong>danger 覆盖</strong>：AI 判定 danger 的命令，即使无检测风险也要确认</li>
+    <li><strong>warn 确认</strong>：AI 判定 warn 的命令，需要用户确认</li>
+    <li><strong>safe 放行</strong>：AI 判定 safe 且无检测风险，直接允许执行</li>
+  </ul>
+
+  <div class="callout">
+    <strong>设计决策：</strong>安全检查器运行在 TUI 端而非服务端，因为命令最终在用户本地执行，检查逻辑应在执行前进行。这也避免了网络延迟影响用户体验。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">02</span> TUI 命令执行功能</h2>
+  <p>在 Phase 2 的三栏布局基础上，新增了 <code>Ctrl+Enter</code> 执行命令的快捷键，以及两个弹窗界面：</p>
+
+  <h3>2.1 命令确认弹窗（ConfirmScreen）</h3>
+  <p>当安全检查器返回 <code>CONFIRM</code> 时，弹出确认弹窗显示：</p>
+  <ul>
+    <li>即将执行的命令内容</li>
+    <li>风险项列表（通过 <code>format_risks()</code> 格式化）</li>
+    <li>危险等级标签</li>
+    <li>确认/取消按钮（支持 y/n/Esc 快捷键）</li>
+  </ul>
+
+  <h3>2.2 命令输出弹窗（OutputScreen）</h3>
+  <p>命令执行完成后，弹出输出窗口显示：</p>
+  <ul>
+    <li>执行的命令内容</li>
+    <li>退出码（0=成功，非 0=失败，-1=超时/错误）</li>
+    <li>stdout 完整输出</li>
+    <li>stderr 完整错误信息</li>
+    <li>Esc/Enter 关闭</li>
+  </ul>
+
+  <h3>2.3 执行流程</h3>
+  <pre><code>用户按 Ctrl+Enter
+    │
+    ▼
+获取 current_command（当前预览的命令）
+    │
+    ▼
+check_command(command, ai_danger_level)
+    │
+    ├── BLOCK ──→ 聊天记录显示"命令被阻止" + 原因
+    │
+    ├── CONFIRM ──→ 弹出 ConfirmScreen
+    │                  ├── 确认 → _execute(command)
+    │                  └── 取消 → 聊天记录显示"已取消"
+    │
+    └── ALLOW ──→ _execute(command) 直接执行
+                        │
+                        ▼
+                 subprocess.run(shell=True, timeout=30)
+                        │
+                        ├── 成功 → 聊天记录简要输出 + 弹出 OutputScreen
+                        ├── 失败 → 聊天记录错误信息 + 弹出 OutputScreen
+                        └── 超时 → 聊天记录"超时" + 弹出 OutputScreen</code></pre>
+
+  <h3>2.4 执行细节</h3>
+  <ul>
+    <li><strong>异步执行</strong>：使用 <code>asyncio.to_thread(subprocess.run, ...)</code> 避免 TUI 冻结</li>
+    <li><strong>超时保护</strong>：30 秒超时，防止长时间阻塞</li>
+    <li><strong>shell=True</strong>：支持管道、重定向等 shell 语法</li>
+    <li><strong>输出截断</strong>：聊天记录中只显示前 5 行，完整输出在弹窗中</li>
+    <li><strong>错误处理</strong>：TimeoutExpired 和 Exception 都被捕获，通过弹窗展示</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 部署配置</h2>
+
+  <h3>3.1 Dockerfile</h3>
+  <p>基于 <code>python:3.10-slim</code> 镜像，利用 Docker 缓存层优化构建。生产环境关闭 DEBUG 和 reload，单 worker 运行。</p>
+
+  <h3>3.2 Render Blueprint（render.yaml）</h3>
+  <p>配置了 Render 免费套餐部署方案：</p>
+  <ul>
+    <li><strong>套餐</strong>：Free（512MB 内存，750 小时/月）</li>
+    <li><strong>运行时</strong>：Python 3.10.12</li>
+    <li><strong>持久化</strong>：1GB 磁盘挂载到 <code>/data</code>，SQLite 数据库存于此</li>
+    <li><strong>环境变量</strong>：ADMIN_API_KEY 自动生成，LLM_API_KEY 手动填写</li>
+    <li><strong>启动命令</strong>：<code>uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1</code></li>
+  </ul>
+
+  <h3>3.3 .env.example 完善</h3>
+  <p>新增生产环境注意事项：DEBUG 设为 False、ADMIN_API_KEY 改为随机字符串、DATABASE_URL 使用持久化路径、LLM_API_KEY 填入真实密钥。</p>
+
+  <div class="callout warn">
+    <strong>注意：</strong>Render 免费套餐在 15 分钟无请求后会自动休眠，首次请求需要冷启动。对于开发和小规模使用足够，生产环境建议升级付费套餐。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> PyInstaller 打包配置</h2>
+  <p>通过 PyInstaller 将 ask-tui 打包为单文件可执行程序，方便分发给朋友使用。</p>
+
+  <h3>4.1 打包配置（ask-tui.spec）</h3>
+  <ul>
+    <li><strong>单文件模式</strong>：<code>onefile=True</code>，生成一个可执行文件</li>
+    <li><strong>hiddenimports</strong>：显式声明 Textual 和 Rich 内部模块</li>
+    <li><strong>excludes</strong>：排除 tkinter、matplotlib 等不需要的大型库</li>
+    <li><strong>UPX 压缩</strong>：减小输出文件大小</li>
+  </ul>
+
+  <h3>4.2 构建脚本（build.sh）</h3>
+  <p>一键打包脚本，自动检查依赖、清理旧构建、执行打包、验证输出：</p>
+  <pre><code>chmod +x build.sh
+./build.sh
+
+# 输出:
+# ✓ 打包成功!
+#   输出文件: dist/ask-tui
+#   文件大小: 15M</code></pre>
+
+  <div class="callout">
+    <strong>分发前：</strong>修改 <code>config.py</code> 中的默认 API 地址为你的线上服务 URL（<code>https://你的域名.com</code>），这样朋友安装后开箱即用，无需手动配置。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 文件结构</h2>
+  <div class="file-tree">
+ask-tui/
+├── app.py              <span class="new">← 新增命令执行（ConfirmScreen + OutputScreen + Ctrl+Enter）</span>
+├── api_client.py
+├── config.py
+├── main.py
+├── safety_checker.py   <span class="new">← 命令安全检查器（3 层防护）</span>
+├── ask-tui.spec        <span class="new">← PyInstaller 打包配置</span>
+├── build.sh            <span class="new">← 一键构建脚本</span>
+└── requirements.txt
+
+ask-api/
+├── Dockerfile          <span class="new">← Docker 镜像配置</span>
+├── render.yaml         <span class="new">← Render 部署蓝图</span>
+├── .dockerignore       <span class="new">← Docker 构建忽略文件</span>
+├── .env.example        <span class="new">← 完善生产环境说明</span>
+├── app/
+│   ├── config.py       <span class="new">← 版本号升级到 0.3.0</span>
+│   └── ...             (其他 Phase 1-2 文件不变)
+└── tests/
+    └── test_safety_checker.py  <span class="new">← 安全检查器测试 (51)</span>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 测试覆盖</h2>
+  <p>第 3 阶段新增 51 个安全检查器测试，覆盖 BLOCK / CONFIRM / ALLOW 三条路径，以及 AI 联动、注入检测、敏感目录保护。全部 117 个测试通过。</p>
+
+  <table>
+    <thead><tr><th>测试类</th><th>用例数</th><th>覆盖范围</th></tr></thead>
+    <tbody>
+      <tr><td>TestBlockedCommands</td><td>9</td><td>rm -rf /、mkfs、dd、shutdown、reboot、fork bomb、iptables -F、killall -9、写入磁盘设备</td></tr>
+      <tr><td>TestConfirmCommands</td><td>11</td><td>rm -rf、rm -f、chmod 777、chmod -R、kill -9、git push --force、git reset --hard、curl|sh、wget|bash、mv /dev/null、docker rm -f</td></tr>
+      <tr><td>TestAllowedCommands</td><td>12</td><td>ls、cat、grep、find、echo、df、ps、git status、git log、python --version、空命令、纯空白</td></tr>
+      <tr><td>TestAIDangerLevel</td><td>5</td><td>danger 覆盖、warn 确认、safe 放行、BLOCK 优先于 AI、danger_level 下仍 BLOCK</td></tr>
+      <tr><td>TestInjectionDetection</td><td>3</td><td>反引号替换、$() 替换、eval</td></tr>
+      <tr><td>TestSensitivePaths</td><td>4</td><td>rm /etc、chmod /boot、读取 /etc 允许、cat /etc 允许</td></tr>
+      <tr><td>TestFormatRisks</td><td>3</td><td>空列表、单个风险、多个风险</td></tr>
+      <tr><td>TestPatternCompleteness</td><td>4</td><td>模式列表非空、元组结构、正则合法性</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 部署指南</h2>
+
+  <h3>7.1 后端部署到 Render</h3>
+  <pre><code># 1. 注册 Render 账号 (https://render.com)
+# 2. 新建 Web Service，连接 GitHub 仓库
+# 3. 选择 "Blueprint" 模式，自动读取 render.yaml
+# 4. 在 Environment 中设置:
+#    - LLM_API_KEY = 你的智谱 API Key
+#    - ADMIN_API_KEY = 自动生成（或手动设置）
+# 5. 部署完成后获取 URL: https://ask-api-xxxx.onrender.com
+
+# 6. 初始化邀请码（管理员接口）
+curl -X POST https://ask-api-xxxx.onrender.com/api/auth/admin/invite-codes?count=10 \
+  -H "X-Admin-Key: 你的ADMIN_API_KEY"</code></pre>
+
+  <h3>7.2 TUI 打包分发</h3>
+  <pre><code># 1. 修改 config.py 中的默认 API 地址
+#    "api_base_url": "https://ask-api-xxxx.onrender.com"
+
+# 2. 打包
+cd ask-tui
+./build.sh
+
+# 3. 分发 dist/ask-tui 给朋友
+# 4. 朋友收到邀请码后启动:
+./ask-tui
+# → 弹出激活界面 → 输入邀请码 → 开始使用</code></pre>
+
+  <h3>7.3 Docker 本地部署</h3>
+  <pre><code># 构建镜像
+docker build -t ask-api .
+
+# 运行容器（挂载数据卷持久化）
+docker run -d \
+  -p 8000:8000 \
+  -v ask-api-data:/data \
+  -e LLM_API_KEY=你的密钥 \
+  -e ADMIN_API_KEY=你的管理密钥 \
+  -e DATABASE_URL=sqlite+aiosqlite:////data/ask_api.db \
+  ask-api</code></pre>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 完整功能闭环</h2>
+  <p>经过三个阶段，ask-tui 已实现完整的功能闭环：</p>
+
+  <table>
+    <thead><tr><th>阶段</th><th>版本</th><th>核心功能</th><th>测试</th></tr></thead>
+    <tbody>
+      <tr><td>Phase 1</td><td>v0.1.0</td><td>后端基础：数据库设计 + 邀请码 + 对话 CRUD + 用户激活</td><td>47</td></tr>
+      <tr><td>Phase 2</td><td>v0.2.0</td><td>AI 集成：GLM-4-Flash + SSE 流式对话 + 限流/清理 + TUI 客户端</td><td>+19 = 66</td></tr>
+      <tr><td>Phase 3</td><td>v0.3.0</td><td>执行闭环：安全检查 + 命令执行 + 部署配置 + 打包分发</td><td>+51 = 117</td></tr>
+    </tbody>
+  </table>
+
+  <pre><code>完整使用流程:
+
+用户启动 ask-tui
+  → 首次弹出激活界面，输入邀请码
+  → 激活成功，显示三栏界面
+  → Ctrl+N 新建对话
+  → 输入需求："查找大于 1GB 的文件"
+  → AI 返回命令：find . -type f -size +1G
+  → 命令预览面板显示（safe 级别）
+  → Ctrl+Enter 执行
+  → 安全检查通过（ALLOW）
+  → subprocess 执行 → 输出弹窗显示结果
+  → 聊天记录显示简要输出
+  → 关闭弹窗，继续对话</code></pre>
+</section>
+
+<div class="report-footer">
+  ask-tui v0.3.0 · 第 3 阶段开发报告 · 117/117 tests passed
+</div>
+
+</div>
+</body>
+</html>

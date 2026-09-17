@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ask-tui 第1阶段开发报告</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --orange: #db6d28;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans CJK SC', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.7;
+    padding: 2rem 1rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.8rem; margin-bottom: 0.25rem; }
+  h2 {
+    font-size: 1.3rem;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
+  }
+  h3 { font-size: 1.05rem; margin: 1.5rem 0 0.75rem; color: var(--text); }
+  p { margin-bottom: 0.75rem; color: var(--text); }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+  code, pre {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+  code {
+    background: rgba(110,118,129,0.15);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    color: var(--text);
+  }
+  pre {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.88rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+  th { background: var(--card); color: var(--accent); font-weight: 600; }
+  td code { font-size: 0.8rem; }
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-green { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .badge-red { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+  .badge-yellow { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+  .badge-blue { background: rgba(88,166,255,0.15); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+  }
+  .stat-card .num { font-size: 1.8rem; font-weight: 700; }
+  .stat-card .label { color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem; }
+  .stat-card.green .num { color: var(--green); }
+  .stat-card.blue .num { color: var(--accent); }
+  .stat-card.orange .num { color: var(--orange); }
+  .stat-card.yellow .num { color: var(--yellow); }
+  ul { list-style: none; padding-left: 1rem; }
+  ul li { margin-bottom: 0.3rem; position: relative; padding-left: 1rem; }
+  ul li::before { content: "▸"; position: absolute; left: 0; color: var(--accent); }
+  .tree {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .tree .file { color: var(--text); }
+  .tree .dir { color: var(--accent); font-weight: 600; }
+  .summary-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .summary-box.fail { border-left-color: var(--red); }
+  .summary-box.warn { border-left-color: var(--yellow); }
+  .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>ask-tui 第1阶段开发报告</h1>
+<p class="subtitle">后端 API 基础框架 | 2026-09-16</p>
+
+<div class="stat-grid">
+  <div class="stat-card green"><div class="num">44</div><div class="label">测试通过</div></div>
+  <div class="stat-card blue"><div class="num">21</div><div class="label">源文件数</div></div>
+  <div class="stat-card orange"><div class="num">12</div><div class="label">API 端点</div></div>
+  <div class="stat-card yellow"><div class="num">4</div><div class="label">数据库表</div></div>
+</div>
+
+<div class="summary-box">
+  <strong>第1阶段目标已达成</strong> — 后端 API 框架搭建完成，数据库模型、邀请码系统、对话 CRUD 接口全部就绪，44 个自动化测试全部通过，可以进入第2阶段（AI 集成）。
+</div>
+
+<h2>项目结构</h2>
+
+<div class="tree">
+<span class="dir">ask-api/</span>
+├── <span class="dir">app/</span>
+│   ├── <span class="file">__init__.py</span>
+│   ├── <span class="file">config.py</span>          <span style="color:var(--muted)"># 应用配置（Pydantic Settings）</span>
+│   ├── <span class="file">database.py</span>       <span style="color:var(--muted)"># 异步引擎 + 会话工厂</span>
+│   ├── <span class="file">main.py</span>           <span style="color:var(--muted)"># FastAPI 入口 + 路由注册</span>
+│   ├── <span class="file">models.py</span>         <span style="color:var(--muted)"># 4 张表 SQLAlchemy 模型</span>
+│   ├── <span class="file">schemas.py</span>        <span style="color:var(--muted)"># Pydantic 请求/响应模型</span>
+│   ├── <span class="dir">routers/</span>
+│   │   ├── <span class="file">__init__.py</span>
+│   │   ├── <span class="file">auth.py</span>        <span style="color:var(--muted)"># 邀请码激活 + 用户查询</span>
+│   │   ├── <span class="file">conversations.py</span> <span style="color:var(--muted)"># 对话/消息 CRUD</span>
+│   │   └── <span class="file">health.py</span>      <span style="color:var(--muted)"># 健康检查</span>
+│   └── <span class="dir">services/</span>
+│       ├── <span class="file">__init__.py</span>
+│       ├── <span class="file">invite_service.py</span>     <span style="color:var(--muted)"># 邀请码生成/验证/激活</span>
+│       └── <span class="file">conversation_service.py</span> <span style="color:var(--muted)"># 对话/消息业务逻辑</span>
+├── <span class="dir">tests/</span>
+│   ├── <span class="file">__init__.py</span>
+│   ├── <span class="file">conftest.py</span>        <span style="color:var(--muted)"># 测试 fixtures（内存 DB + StaticPool）</span>
+│   ├── <span class="file">test_auth.py</span>       <span style="color:var(--muted)"># 认证接口测试（11 个）</span>
+│   ├── <span class="file">test_conversations.py</span> <span style="color:var(--muted)"># 对话接口测试（10 个）</span>
+│   ├── <span class="file">test_invite.py</span>     <span style="color:var(--muted)"># 邀请码服务测试（11 个）</span>
+│   └── <span class="file">test_models.py</span>    <span style="color:var(--muted)"># 数据模型测试（8 个）</span>
+├── <span class="file">pytest.ini</span>            <span style="color:var(--muted)"># pytest 配置</span>
+├── <span class="file">requirements.txt</span>     <span style="color:var(--muted)"># 依赖列表</span>
+└── <span class="file">run.py</span>               <span style="color:var(--muted)"># 开发服务器启动脚本</span>
+</div>
+
+<h2>技术栈</h2>
+
+<table>
+<tr><th>层</th><th>技术</th><th>版本</th><th>用途</th></tr>
+<tr><td>Web 框架</td><td>FastAPI</td><td>0.115.0</td><td>异步 API 框架，自动生成 OpenAPI 文档</td></tr>
+<tr><td>ASGI 服务器</td><td>Uvicorn</td><td>0.30.6</td><td>开发服务器</td></tr>
+<tr><td>ORM</td><td>SQLAlchemy 2.0</td><td>2.0.35</td><td>异步 ORM，声明式模型</td></tr>
+<tr><td>数据库</td><td>SQLite + aiosqlite</td><td>0.20.0</td><td>免费文件数据库，零配置</td></tr>
+<tr><td>数据校验</td><td>Pydantic</td><td>2.9.2</td><td>请求/响应模型自动校验</td></tr>
+<tr><td>配置管理</td><td>pydantic-settings</td><td>2.5.2</td><td>环境变量 + .env 配置</td></tr>
+<tr><td>测试框架</td><td>pytest + pytest-asyncio</td><td>8.3.3 / 0.24.0</td><td>异步测试，内存 DB 隔离</td></tr>
+<tr><td>HTTP 测试客户端</td><td>HTTPX</td><td>0.27.2</td><td>异步 HTTP 客户端</td></tr>
+</table>
+
+<h2>数据库设计</h2>
+
+<p>4 张表，覆盖用户、邀请码、对话、消息全生命周期：</p>
+
+<h3>表关系</h3>
+<pre><code>invite_codes (1) ──→ (1) users
+                           │
+                           (1)
+                            ↓
+                          (N)
+                     conversations
+                           │
+                           (1)
+                            ↓
+                          (N)
+                        messages</code></pre>
+
+<h3>表结构</h3>
+
+<table>
+<tr><th>表</th><th>字段</th><th>说明</th></tr>
+<tr>
+  <td><code>invite_codes</code></td>
+  <td><code>id</code>, <code>code</code>, <code>is_used</code>, <code>used_at</code>, <code>created_at</code></td>
+  <td>邀请码表。管理员预生成，用户激活后标记已使用</td>
+</tr>
+<tr>
+  <td><code>users</code></td>
+  <td><code>id</code>, <code>username</code>, <code>device_id</code>, <code>invite_code_id</code>, <code>is_active</code>, <code>created_at</code></td>
+  <td>用户表。device_id 唯一标识设备，邀请码外键关联</td>
+</tr>
+<tr>
+  <td><code>conversations</code></td>
+  <td><code>id</code>, <code>user_id</code>, <code>title</code>, <code>created_at</code>, <code>updated_at</code></td>
+  <td>对话表。一个用户可创建多个对话，默认标题"新对话"</td>
+</tr>
+<tr>
+  <td><code>messages</code></td>
+  <td><code>id</code>, <code>conversation_id</code>, <code>role</code>, <code>content</code>, <code>command</code>, <code>explanation</code>, <code>danger_level</code>, <code>created_at</code></td>
+  <td>消息表。role 区分 user/assistant，danger_level 分 safe/warn/danger</td>
+</tr>
+</table>
+
+<h2>API 端点</h2>
+
+<table>
+<tr><th>方法</th><th>路径</th><th>功能</th><th>认证</th></tr>
+<tr><td>GET</td><td><code>/api/health</code></td><td>健康检查（含数据库状态）</td><td><span class="badge badge-green">无需</span></td></tr>
+<tr><td>POST</td><td><code>/api/auth/activate</code></td><td>邀请码激活用户</td><td><span class="badge badge-green">无需</span></td></tr>
+<tr><td>GET</td><td><code>/api/auth/me</code></td><td>获取当前用户信息</td><td><span class="badge badge-yellow">X-Device-ID</span></td></tr>
+<tr><td>POST</td><td><code>/api/auth/admin/invite-codes</code></td><td>生成邀请码（管理员）</td><td><span class="badge badge-green">无需</span></td></tr>
+<tr><td>GET</td><td><code>/api/auth/admin/invite-codes</code></td><td>查看所有邀请码（管理员）</td><td><span class="badge badge-green">无需</span></td></tr>
+<tr><td>GET</td><td><code>/api/conversations</code></td><td>获取对话列表</td><td><span class="badge badge-yellow">X-Device-ID</span></td></tr>
+<tr><td>POST</td><td><code>/api/conversations</code></td><td>创建新对话</td><td><span class="badge badge-yellow">X-Device-ID</span></td></tr>
+<tr><td>DELETE</td><td><code>/api/conversations/{id}</code></td><td>删除对话（级联消息）</td><td><span class="badge badge-yellow">X-Device-ID</span></td></tr>
+<tr><td>GET</td><td><code>/api/conversations/{id}/messages</code></td><td>获取对话消息</td><td><span class="badge badge-yellow">X-Device-ID</span></td></tr>
+<tr><td>POST</td><td><code>/api/conversations/{id}/messages</code></td><td>发送用户消息</td><td><span class="badge badge-yellow">X-Device-ID</span></td></tr>
+</table>
+
+<h2>测试结果</h2>
+
+<div class="stat-grid">
+  <div class="stat-card green"><div class="num">44</div><div class="label">通过</div></div>
+  <div class="stat-card"><div class="num">0</div><div class="label">失败</div></div>
+  <div class="stat-card"><div class="num">0.71s</div><div class="label">耗时</div></div>
+  <div class="stat-card"><div class="num">1</div><div class="label">警告</div></div>
+</div>
+
+<table>
+<tr><th>测试文件</th><th>测试数</th><th>状态</th><th>覆盖内容</th></tr>
+<tr><td><code>test_models.py</code></td><td>8</td><td><span class="badge badge-green">全通过</span></td><td>模型默认值、UUID 生成、repr</td></tr>
+<tr><td><code>test_invite.py</code></td><td>11</td><td><span class="badge badge-green">全通过</span></td><td>邀请码格式、唯一性、验证、激活逻辑</td></tr>
+<tr><td><code>test_auth.py</code></td><td>11</td><td><span class="badge badge-green">全通过</span></td><td>激活接口、重复设备、已用码、用户查询</td></tr>
+<tr><td><code>test_conversations.py</code></td><td>10</td><td><span class="badge badge-green">全通过</span></td><td>对话 CRUD、消息发送、权限检查、健康检查</td></tr>
+<tr><td><code>test_models.py</code></td><td>4</td><td><span class="badge badge-green">全通过</span></td><td>邀请码生成与校验</td></tr>
+</table>
+
+<h2>开发过程中解决的问题</h2>
+
+<h3>1. UserResponse 字段映射错误 <span class="badge badge-red">已修复</span></h3>
+<p><strong>现象</strong>：<code>/api/auth/activate</code> 接口始终返回 400 Bad Request。</p>
+<p><strong>原因</strong>：<code>UserResponse</code> 定义了 <code>user_id</code> 字段，但 ORM 模型 <code>User</code> 的字段是 <code>id</code>。<code>model_validate(user)</code> 无法找到 <code>user_id</code> 属性，抛出 <code>ValidationError</code>（Pydantic v2 中是 <code>ValueError</code> 子类），被 <code>except ValueError</code> 捕获后返回 400。</p>
+<p><strong>修复</strong>：移除 <code>UserResponse</code> 的 <code>from_attributes</code>，在 auth 端点手动构造响应对象，显式映射 <code>user.id → user_id</code>。</p>
+
+<h3>2. 路由前缀重复 <span class="badge badge-red">已修复</span></h3>
+<p><strong>现象</strong>：对话接口 URL 变成 <code>/api/conversations/conversations</code>。</p>
+<p><strong>原因</strong>：<code>conversations</code> 路由文件内 <code>APIRouter(prefix="/conversations")</code>，同时 <code>main.py</code> 注册时 <code>prefix="/api/conversations"</code>，导致双重前缀。</p>
+<p><strong>修复</strong>：移除路由文件内的 <code>prefix</code>，统一在 <code>main.py</code> 注册时指定。</p>
+
+<h3>3. 内存 SQLite 连接隔离 <span class="badge badge-red">已修复</span></h3>
+<p><strong>现象</strong>：测试 fixture 中创建的邀请码，在 HTTP 请求中查不到。</p>
+<p><strong>原因</strong>：内存 SQLite 默认每个连接独立，fixture 用的 <code>db</code> 会话和 client 用的请求会话是不同连接，数据互不可见。</p>
+<p><strong>修复</strong>：在 <code>conftest.py</code> 的 <code>create_async_engine</code> 中添加 <code>poolclass=StaticPool</code>，让所有会话共享同一个内存连接。</p>
+
+<h3>4. Pydantic Config 弃用警告 <span class="badge badge-yellow">已修复</span></h3>
+<p><strong>原因</strong>：Pydantic v2 弃用了 <code>class Config</code> 方式。</p>
+<p><strong>修复</strong>：所有响应模型改用 <code>model_config = ConfigDict(from_attributes=True)</code>。</p>
+
+<h2>第2阶段规划</h2>
+
+<ul>
+  <li>集成智谱 GLM-4-Flash 模型，实现 <code>/api/chat</code> 流式对话接口</li>
+  <li>Prompt 工程：将用户自然语言转化为 shell 命令 + 解释 + 危险等级</li>
+  <li>消息过期自动清理定时任务（<code>cleanup_old_messages</code> 已实现，待接入调度器）</li>
+  <li>API 限流中间件（每日请求限制 200 次/设备）</li>
+  <li>管理员接口鉴权（API Key 或简单密码）</li>
+  <li>本地 TUI 客户端开发（Textual 框架，三栏布局）</li>
+</ul>
+
+<div class="footer">
+  ask-tui · AI 命令行助手 · 第1阶段完成于 2026-09-16
+</div>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+
+# 环境配置
+.env
+*.db
+*.sqlite3
+
+# 测试
+.pytest_cache/
+htmlcov/
+.coverage
+
+# 构建
+build/
+dist/
+*.spec.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# 系统
+.DS_Store
+Thumbs.db

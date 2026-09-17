@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ask-tui 第 2 阶段开发报告</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #21262d;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent-dim: #1f6feb;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* Header */
+  .report-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .report-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+  .report-header .subtitle {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+  }
+  .badge-row { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-family: var(--mono);
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .badge.green { color: var(--green); border-color: rgba(63,185,80,0.3); }
+  .badge.blue { color: var(--accent); border-color: rgba(88,166,255,0.3); }
+  .badge.yellow { color: var(--yellow); border-color: rgba(210,153,34,0.3); }
+
+  /* Section */
+  section { margin-bottom: 2.5rem; }
+  h2 {
+    font-size: 1.35rem;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  h2 .num {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    background: rgba(88,166,255,0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.3rem;
+  }
+  h3 {
+    font-size: 1.05rem;
+    color: var(--text);
+    margin: 1.2rem 0 0.6rem;
+  }
+  p { margin-bottom: 0.7rem; color: var(--text); }
+  ul { margin-left: 1.5rem; margin-bottom: 0.7rem; }
+  li { margin-bottom: 0.3rem; color: var(--text-dim); }
+  li strong { color: var(--text); }
+
+  /* Code */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    margin: 0.8rem 0 1.2rem;
+    font-size: 0.85rem;
+  }
+  code {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+  p code, li code, td code {
+    background: var(--surface-2);
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    color: var(--accent);
+  }
+  pre code { background: none; padding: 0; color: var(--text); }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0 1.2rem;
+    font-size: 0.88rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--text-dim); font-weight: 600; }
+  td { color: var(--text); }
+  tr:hover td { background: var(--surface); }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.6rem;
+    padding: 1rem 1.2rem;
+  }
+  .card .label { color: var(--text-dim); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card .value { font-size: 1.6rem; font-weight: 700; margin-top: 0.3rem; }
+  .card .value.green { color: var(--green); }
+  .card .value.blue { color: var(--accent); }
+  .card .desc { color: var(--text-dim); font-size: 0.82rem; margin-top: 0.3rem; }
+
+  /* Callout */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: rgba(88,166,255,0.06);
+    padding: 0.8rem 1.2rem;
+    border-radius: 0 0.4rem 0.4rem 0;
+    margin: 1rem 0;
+  }
+  .callout.warn { border-color: var(--yellow); background: rgba(210,153,34,0.06); }
+
+  /* File tree */
+  .file-tree {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 0.8rem 0;
+    color: var(--text-dim);
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .new { color: var(--green); }
+
+  /* Progress */
+  .progress-bar {
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 0.5rem 0 1rem;
+  }
+  .progress-bar .fill { height: 100%; background: var(--green); border-radius: 3px; }
+
+  /* SSE flow */
+  .sse-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .sse-step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+  }
+  .sse-step .arrow { color: var(--text-dim); }
+  .sse-step .tag {
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+  }
+  .tag.start { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .tag.chunk { background: rgba(139,148,158,0.15); color: var(--text-dim); }
+  .tag.result { background: rgba(63,185,80,0.15); color: var(--green); }
+  .tag.error { background: rgba(248,81,73,0.15); color: var(--red); }
+  .tag.done { background: rgba(210,153,34,0.15); color: var(--yellow); }
+
+  /* Footer */
+  .report-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+    margin-top: 3rem;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ===== Header ===== -->
+<div class="report-header">
+  <h1>ask-tui 第 2 阶段开发报告</h1>
+  <div class="subtitle">AI 集成 · 流式对话 · 中间件 · 定时清理 · TUI 客户端</div>
+  <div class="badge-row">
+    <span class="badge green">66 tests passed</span>
+    <span class="badge blue">GLM-4-Flash</span>
+    <span class="badge yellow">SSE Streaming</span>
+    <span class="badge">Textual TUI</span>
+    <span class="badge">v0.2.0</span>
+  </div>
+</div>
+
+<!-- ===== Summary ===== -->
+<section>
+  <h2><span class="num">概览</span></h2>
+  <p>第 2 阶段在 Phase 1 的后端基础上，完成了 <strong>AI 模型集成</strong>、<strong>流式 SSE 对话</strong>、<strong>限流与鉴权中间件</strong>、<strong>消息自动清理</strong>，以及完整的 <strong>Textual TUI 客户端</strong>。全部 66 个自动化测试通过，覆盖了从 AI 响应解析到 SSE 事件流到限流拦截的完整链路。</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="label">后端新增文件</div>
+      <div class="value blue">7</div>
+      <div class="desc">ai_service / chat / rate_limit / admin_auth / scheduler 等</div>
+    </div>
+    <div class="card">
+      <div class="label">TUI 客户端文件</div>
+      <div class="value blue">5</div>
+      <div class="desc">app / api_client / config / main / requirements</div>
+    </div>
+    <div class="card">
+      <div class="label">测试用例总数</div>
+      <div class="value green">66</div>
+      <div class="desc">含 19 个 Phase 2 新增测试</div>
+    </div>
+    <div class="card">
+      <div class="label">测试通过率</div>
+      <div class="value green">100%</div>
+      <div class="desc">0.92s 全部完成</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Architecture ===== -->
+<section>
+  <h2><span class="num">01</span> 整体架构</h2>
+  <p>第 2 阶段完成后，系统形成了 <strong>瘦客户端</strong> 架构：TUI 端只负责交互展示，所有业务逻辑、AI 调用、数据持久化都在云端完成。</p>
+
+  <pre><code>┌─────────────────────────────────────────────────────┐
+│                   用户终端 (本地)                       │
+│                                                       │
+│  ┌───────────┐  ┌───────────┐  ┌──────────────┐    │
+│  │  对话列表  │  │  消息记录  │  │   命令预览    │    │
+│  │  (左栏)   │  │  (中栏)   │  │   (右栏)     │    │
+│  └───────────┘  └───────────┘  └──────────────┘    │
+│         │              │               │              │
+│         └──────────────┴───────────────┘              │
+│                        │                              │
+│              ┌─────────┴─────────┐                   │
+│              │   ApiClient (httpx) │                   │
+│              │   SSE 流式接收      │                   │
+│              └─────────┬─────────┘                   │
+└────────────────────────┼────────────────────────────┘
+                         │ HTTP / SSE
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│              云端后端 (FastAPI)                        │
+│                                                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐    │
+│  │ 限流中间件 │  │ 管理员鉴权 │  │  消息清理调度器   │    │
+│  └──────────┘  └──────────┘  └──────────────────┘    │
+│         │                          │                   │
+│  ┌──────┴──────────────────────────┴──────────┐      │
+│  │            路由层 (Routers)                   │      │
+│  │  /api/health  /api/auth  /api/conversations  │      │
+│  │  /api/chat (SSE)                              │      │
+│  └──────────────────┬─────────────────────────┘      │
+│                     │                                 │
+│  ┌──────────────────┴─────────────────────────┐      │
+│  │            服务层 (Services)                  │      │
+│  │  ai_service │ invite_service │ conv_service  │      │
+│  └──────┬──────────────────────┬───────────────┘      │
+│         │                      │                       │
+│         ▼                      ▼                       │
+│  ┌──────────────┐    ┌──────────────┐                 │
+│  │  GLM-4-Flash  │    │  SQLite (ORM) │                 │
+│  │  (智谱免费API) │    │  aiosqlite   │                 │
+│  └──────────────┘    └──────────────┘                 │
+└─────────────────────────────────────────────────────┘</code></pre>
+</section>
+
+<!-- ===== AI Service ===== -->
+<section>
+  <h2><span class="num">02</span> AI 服务 — GLM-4-Flash 集成</h2>
+
+  <h3>2.1 Prompt 工程</h3>
+  <p>系统提示词（<code>SYSTEM_PROMPT</code>）将 GLM-4-Flash 定位为命令行助手，要求严格输出 JSON 格式，包含四个字段：</p>
+  <ul>
+    <li><code>thinking</code> — 对用户需求的理解（1-2 句中文）</li>
+    <li><code>command</code> — 可直接执行的 shell 命令</li>
+    <li><code>explanation</code> — 命令参数的详细解释</li>
+    <li><code>danger_level</code> — 危险等级：<code>safe</code> / <code>warn</code> / <code>danger</code></li>
+  </ul>
+  <p>危险等级判定标准明确写入 prompt：只读操作为 safe，可恢复修改为 warn，不可逆操作为 danger。</p>
+
+  <h3>2.2 流式调用</h3>
+  <p><code>chat_completion_stream()</code> 使用 httpx 异步流式请求智谱 API，逐块 <code>yield</code> 增量文本，解析 SSE 格式的 <code>data:</code> 行，遇到 <code>[DONE]</code> 终止。同时提供非流式方法 <code>chat_completion()</code> 作为备用。</p>
+
+  <h3>2.3 响应解析与容错</h3>
+  <p><code>parse_ai_response()</code> 对 AI 输出做三层容错：</p>
+  <ul>
+    <li>移除可能的 markdown 代码块包裹（<code>```json ... ```</code>）</li>
+    <li>标准 JSON 解析，缺失字段填充默认值</li>
+    <li>解析失败时降级为纯文本 explanation，danger_level 默认 safe</li>
+  </ul>
+
+  <div class="callout">
+    <strong>设计决策：</strong>选择 GLM-4-Flash 而非其他模型，因为智谱提供免费额度，且模型对 JSON 格式指令的遵守度高。temperature 设为 0.3 以降低随机性，max_tokens 1000 足够覆盖绝大多数 shell 命令场景。
+  </div>
+</section>
+
+<!-- ===== SSE Chat ===== -->
+<section>
+  <h2><span class="num">03</span> 流式聊天路由 — SSE 事件流</h2>
+  <p><code>POST /api/chat</code> 接口通过 Server-Sent Events 向客户端推送 AI 响应。完整事件序列如下：</p>
+
+  <div class="sse-flow">
+    <div class="sse-step">
+      <span class="tag start">start</span>
+      <span>开始事件，携带 user_message_id</span>
+    </div>
+    <div class="sse-step">
+      <span class="tag chunk">chunk</span>
+      <span>增量文本块（多次发送，逐块拼接）</span>
+      <span class="arrow">→</span>
+      <span class="tag chunk">chunk</span>
+      <span class="arrow">→</span>
+      <span class="tag chunk">chunk</span>
+    </div>
+    <div class="sse-step">
+      <span class="tag result">result</span>
+      <span>结构化结果：thinking / command / explanation / danger_level / message_id</span>
+    </div>
+    <div class="sse-step">
+      <span class="tag done">done</span>
+      <span>结束事件</span>
+    </div>
+  </div>
+
+  <h3>3.1 关键实现细节</h3>
+  <ul>
+    <li><strong>设备鉴权</strong>：通过 <code>X-Device-ID</code> 头识别用户，未激活返回 401</li>
+    <li><strong>对话归属验证</strong>：检查 conversation_id 是否属于当前用户，不存在返回 404</li>
+    <li><strong>用户消息持久化</strong>：在 SSE 流开始前保存用户消息并 commit</li>
+    <li><strong>上下文构建</strong>：从数据库加载完整对话历史，拼装为 system + history 的 messages 列表</li>
+    <li><strong>AI 消息保存</strong>：SSE 流结束后用<strong>独立 session</strong> 保存 AI 消息（避免与请求 session 冲突）</li>
+    <li><strong>错误处理</strong>：任何异常都通过 <code>error</code> 事件返回，不中断连接</li>
+  </ul>
+
+  <h3>3.2 多轮对话上下文</h3>
+  <p>每次请求时从数据库加载该对话的全部历史消息，构建为 OpenAI 兼容的 messages 列表传入 AI。assistant 消息使用原始 JSON 字符串作为 content，让模型理解之前的回复上下文。</p>
+</section>
+
+<!-- ===== Middleware ===== -->
+<section>
+  <h2><span class="num">04</span> 中间件层</h2>
+
+  <h3>4.1 限流中间件</h3>
+  <p><code>rate_limit_middleware</code> 拦截所有 <code>/api/chat</code> 请求，按设备 ID + 日期进行计数。内存存储 <code>_rate_store</code> 结构为 <code>{device_id: {date_str: count}}</code>，每日自动滚动。超过 <code>DAILY_REQUEST_LIMIT</code>（默认 200 次）返回 429。</p>
+  <ul>
+    <li>只限制 <code>/api/chat</code>，其他接口不受影响</li>
+    <li>内存存储，应用重启后重置（对免费部署足够）</li>
+    <li>可通过 <code>RATE_LIMIT_ENABLED</code> 开关全局关闭</li>
+    <li>提供 <code>reset_rate_store()</code> 和 <code>get_device_usage()</code> 供测试使用</li>
+  </ul>
+
+  <h3>4.2 管理员鉴权</h3>
+  <p><code>require_admin</code> 是一个 FastAPI 依赖，通过 <code>X-Admin-Key</code> 头校验管理员身份。密钥存储在 <code>settings.ADMIN_API_KEY</code>，用于保护邀请码生成等管理接口。密钥不匹配返回 403。</p>
+  <pre><code># 使用方式：在路由上添加依赖
+@router.post("/admin/invite-codes", dependencies=[Depends(require_admin)])
+async def generate_invites(count: int = 1, db: AsyncSession = Depends(get_db)):
+    ...</code></pre>
+</section>
+
+<!-- ===== Scheduler ===== -->
+<section>
+  <h2><span class="num">05</span> 消息清理调度器</h2>
+  <p><code>cleanup_scheduler()</code> 是一个 asyncio 后台任务，在应用启动时通过 lifespan 创建，随应用关闭时取消。每 <code>CLEANUP_INTERVAL_HOURS</code>（默认 24 小时）执行一次，删除创建时间超过 <code>MESSAGE_RETENTION_DAYS</code>（默认 7 天）的消息。</p>
+  <pre><code># main.py 中的启动逻辑
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    cleanup_task = asyncio.create_task(cleanup_scheduler())
+    yield
+    cleanup_task.cancel()</code></pre>
+  <div class="callout warn">
+    <strong>注意：</strong>调度器启动后先等待一个完整周期再首次执行，避免启动时立即触发清理。清理操作的错误通过 print 输出，不影响后续调度。
+  </div>
+</section>
+
+<!-- ===== TUI Client ===== -->
+<section>
+  <h2><span class="num">06</span> TUI 客户端 — Textual 三栏界面</h2>
+  <p>客户端基于 <strong>Textual</strong> 框架开发，实现了类似 traesoul 的三栏布局，所有交互通过键盘完成。</p>
+
+  <h3>6.1 界面布局</h3>
+  <pre><code>┌──────────────────────────────────────────────────────────┐
+│  ask-tui                                          Header   │
+├──────────┬─────────────────────────┬──────────────────────┤
+│ 对话列表  │     消息记录            │    命令预览          │
+│          │                         │                      │
+│ 对话1(3) │  你: 怎么查找大文件      │  ┌─ 命令预览 ──────┐ │
+│ 对话2(5) │  AI: 查找大文件         │  │ find . -size+1G │ │
+│ 对话3(0) │                         │  │ [OK] 危险: safe  │ │
+│          │                         │  │ 说明: find命令   │ │
+│          │                         │  └──────────────────┘ │
+├──────────┴─────────────────────────┴──────────────────────┤
+│  输入你的需求... (Enter 发送, Ctrl+N 新对话)    Input      │
+├──────────────────────────────────────────────────────────┤
+│  ^N 新对话  ^D 删除  ^Q 退出                    Footer   │
+└──────────────────────────────────────────────────────────┘</code></pre>
+
+  <h3>6.2 核心功能</h3>
+  <table>
+    <thead>
+      <tr><th>功能</th><th>触发方式</th><th>实现说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>设备激活</td><td>首次启动自动弹出</td><td>ModalScreen 收集邀请码 + 昵称，激活后保存 config</td></tr>
+      <tr><td>对话管理</td><td>Ctrl+N / Ctrl+D</td><td>新建/删除对话，左侧列表实时刷新</td></tr>
+      <tr><td>消息加载</td><td>点击对话</td><td>从后端拉取历史消息，RichLog 渲染</td></tr>
+      <tr><td>流式聊天</td><td>输入框 Enter</td><td>ApiClient.chat_stream 接收 SSE，实时显示</td></tr>
+      <tr><td>命令预览</td><td>AI 返回 result 事件</td><td>Syntax 高亮 + 危险等级颜色 + Panel 包裹</td></tr>
+      <tr><td>配置持久化</td><td>自动</td><td>~/.ask-tui/config.json，含 device_id 和 api_base_url</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.3 ApiClient 设计</h3>
+  <p>所有 HTTP 交互封装在 <code>ApiClient</code> 类中，使用 httpx 异步客户端。关键方法：</p>
+  <ul>
+    <li><code>activate(invite_code, username)</code> — 邀请码激活</li>
+    <li><code>get_user()</code> — 检查是否已激活（连接失败返回 None）</li>
+    <li><code>list_conversations() / create_conversation() / delete_conversation()</code> — 对话 CRUD</li>
+    <li><code>get_messages(conv_id)</code> — 获取对话历史</li>
+    <li><code>chat_stream(conv_id, content)</code> — SSE 流式聊天，yield 事件字典</li>
+  </ul>
+
+  <h3>6.4 命令预览渲染</h3>
+  <p>右侧面板使用 <strong>Rich</strong> 库渲染命令预览：</p>
+  <ul>
+    <li><code>Syntax(command, "bash", theme="monokai")</code> 语法高亮</li>
+    <li>危险等级颜色映射：safe→green, warn→yellow, danger→red</li>
+    <li><code>Panel</code> 包裹，border_style 随危险等级变化</li>
+    <li>包含 thinking 和 explanation 的中文说明</li>
+  </ul>
+</section>
+
+<!-- ===== File Structure ===== -->
+<section>
+  <h2><span class="num">07</span> 文件结构</h2>
+  <div class="file-tree">
+ask-tui/
+├── app.py          <span class="new">← Textual TUI 主应用（三栏布局）</span>
+├── api_client.py   <span class="new">← HTTP/SSE 客户端封装</span>
+├── config.py       <span class="new">← 本地配置管理（device_id 自动生成）</span>
+├── main.py         <span class="new">← TUI 入口</span>
+└── requirements.txt <span class="new">← textual + httpx + rich</span>
+
+ask-api/
+├── app/
+│   ├── middleware/
+│   │   ├── rate_limit.py   <span class="new">← 限流中间件（设备级日限）</span>
+│   │   └── admin_auth.py   <span class="new">← 管理员鉴权依赖</span>
+│   ├── routers/
+│   │   └── chat.py         <span class="new">← SSE 流式聊天路由</span>
+│   ├── services/
+│   │   ├── ai_service.py   <span class="new">← GLM-4-Flash 集成 + Prompt 工程</span>
+│   │   └── scheduler.py    <span class="new">← 消息清理定时任务</span>
+│   ├── config.py           <span class="new">← 新增 AI/限流/管理员配置</span>
+│   ├── main.py             <span class="new">← 注册中间件 + 启动调度器</span>
+│   └── ...                 (Phase 1 文件保持不变)
+├── tests/
+│   ├── test_ai_service.py  <span class="new">← AI 响应解析测试 (10)</span>
+│   └── test_chat.py        <span class="new">← SSE 聊天 + 限流测试 (9)</span>
+└── requirements.txt        <span class="new">← 新增 httpx</span>
+  </div>
+</section>
+
+<!-- ===== Test Coverage ===== -->
+<section>
+  <h2><span class="num">08</span> 测试覆盖</h2>
+  <p>第 2 阶段新增 19 个测试用例，覆盖 AI 服务解析、SSE 事件流、多轮上下文、限流拦截。全部 66 个测试通过。</p>
+
+  <table>
+    <thead>
+      <tr><th>测试文件</th><th>用例数</th><th>覆盖范围</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>test_ai_service.py</code></td><td>10</td><td>JSON 解析、代码块剥离、字段缺失、降级处理、空内容、Prompt 内容验证</td></tr>
+      <tr><td><code>test_chat.py</code></td><td>9</td><td>SSE 事件序列、危险命令传递、404/401/422 错误、消息持久化、非 JSON 降级、多轮上下文、限流 429</td></tr>
+      <tr><td><code>test_auth.py</code></td><td>14</td><td>Phase 1：邀请码激活、用户查询、管理员接口</td></tr>
+      <tr><td><code>test_conversations.py</code></td><td>11</td><td>Phase 1：对话 CRUD、消息列表</td></tr>
+      <tr><td><code>test_invite.py</code></td><td>13</td><td>Phase 1：邀请码生成、激活、重复使用</td></tr>
+      <tr><td><code>test_models.py</code></td><td>9</td><td>Phase 1：ORM 模型字段、默认值</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.1 SSE 测试策略</h3>
+  <p>聊天接口测试通过 <code>unittest.mock.patch</code> mock 掉 <code>chat_completion_stream</code>，避免依赖真实 AI API。模拟三种 AI 响应场景：</p>
+  <ul>
+    <li><strong>正常 JSON</strong>：分两块 yield 完整 JSON，验证事件序列和结果字段</li>
+    <li><strong>危险命令</strong>：返回 danger 级别命令，验证 danger_level 传递</li>
+    <li><strong>非 JSON 降级</strong>：返回纯文本，验证 command 为空、降级为 explanation</li>
+  </ul>
+
+  <h3>8.2 限流测试</h3>
+  <p>通过 <code>monkeypatch</code> 将 <code>DAILY_REQUEST_LIMIT</code> 设为 2，连续发送 3 次请求，验证第三次返回 429 和"上限"提示。</p>
+
+  <h3>8.3 多轮上下文测试</h3>
+  <p>模拟两轮对话，通过 mock 捕获 AI 收到的 messages 列表，验证第二轮请求包含 system + 第一轮 user + 第一轮 assistant + 第二轮 user 的完整上下文。</p>
+</section>
+
+<!-- ===== Config ===== -->
+<section>
+  <h2><span class="num">09</span> 配置项</h2>
+  <p>第 2 阶段在 <code>config.py</code> 中新增了以下配置项，均可通过环境变量覆盖：</p>
+
+  <table>
+    <thead>
+      <tr><th>配置项</th><th>默认值</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>LLM_MODEL</code></td><td>glm-4-flash-250414</td><td>智谱 GLM-4-Flash 模型标识</td></tr>
+      <tr><td><code>LLM_API_KEY</code></td><td>(空)</td><td>智谱 API Key，部署时通过 .env 配置</td></tr>
+      <tr><td><code>LLM_BASE_URL</code></td><td>https://open.bigmodel.cn/api/paas/v4</td><td>智谱 API 基础 URL</td></tr>
+      <tr><td><code>DAILY_REQUEST_LIMIT</code></td><td>200</td><td>每设备每日最大聊天请求次数</td></tr>
+      <tr><td><code>RATE_LIMIT_ENABLED</code></td><td>True</td><td>限流开关</td></tr>
+      <tr><td><code>ADMIN_API_KEY</code></td><td>ask-admin-secret</td><td>管理员 API Key</td></tr>
+      <tr><td><code>MESSAGE_RETENTION_DAYS</code></td><td>7</td><td>消息保留天数</td></tr>
+      <tr><td><code>CLEANUP_INTERVAL_HOURS</code></td><td>24</td><td>清理任务执行间隔（小时）</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===== Next Steps ===== -->
+<section>
+  <h2><span class="num">10</span> 下一步计划</h2>
+  <p>第 2 阶段已完成核心功能闭环（后端 AI 集成 + TUI 客户端交互）。第 3 阶段建议方向：</p>
+  <ul>
+    <li><strong>部署上线</strong>：将 ask-api 部署到免费平台（如 Render / Railway），配置智谱 API Key</li>
+    <li><strong>命令执行</strong>：TUI 端实现本地命令执行功能，带安全确认弹窗（danger 级别需二次确认）</li>
+    <li><strong>打包分发</strong>：用 PyInstaller 将 ask-tui 打包为单文件可执行程序，分发给朋友</li>
+    <li><strong>用户体验</strong>：加载动画、错误重试、离线提示、对话搜索</li>
+    <li><strong>安全加固</strong>：命令注入检测、敏感目录保护、操作日志审计</li>
+  </ul>
+</section>
+
+<!-- ===== Footer ===== -->
+<div class="report-footer">
+  ask-tui v0.2.0 · 第 2 阶段开发报告 · 66/66 tests passed
+</div>
+
+</div>
+</body>
+</html>
