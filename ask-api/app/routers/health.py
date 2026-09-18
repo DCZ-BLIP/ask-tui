@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.database import get_db
+from app.config import settings
 
 router = APIRouter()
 
@@ -24,6 +25,6 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     return {
         "status": "ok" if db_status == "ok" else "degraded",
         "service": "ask-api",
-        "version": "0.1.0",
+        "version": settings.APP_VERSION,
         "database": db_status,
     }

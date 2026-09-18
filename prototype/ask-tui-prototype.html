@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ask-tui · 产品原型</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg-deep: #0a0e0d;
+  --bg-panel: #111817;
+  --bg-panel-2: #161e1d;
+  --bg-input: #0d1413;
+  --bg-hover: #1a2422;
+  --border: #1e2826;
+  --border-light: #2a3633;
+  --text: #d4e0dc;
+  --text-dim: #6b7d78;
+  --text-faint: #3d4a47;
+  --accent: #00d4a0;
+  --accent-dim: #008866;
+  --accent-glow: rgba(0, 212, 160, 0.15);
+  --warning: #ffb347;
+  --danger: #ff5c5c;
+  --danger-glow: rgba(255, 92, 92, 0.12);
+  --user-bubble: #162826;
+  --ai-bubble: #0f1817;
+  --code-bg: #060a09;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  --font-sans: 'Noto Sans SC', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-mono);
+  background: var(--bg-deep);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Title Bar ===== */
+.titlebar {
+  height: 36px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.titlebar__dots {
+  display: flex;
+  gap: 8px;
+}
+.titlebar__dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+}
+.titlebar__dot--red { background: #ff5f57; }
+.titlebar__dot--yellow { background: #febc2e; }
+.titlebar__dot--green { background: #28c840; }
+.titlebar__title {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.titlebar__badge {
+  font-size: 10px;
+  color: var(--accent);
+  background: var(--accent-glow);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: auto;
+}
+.titlebar__status {
+  font-size: 11px;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.titlebar__status::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* ===== Main Layout ===== */
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ===== Sidebar (Left) ===== */
+.sidebar {
+  width: 260px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.sidebar__header {
+  padding: 14px 16px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.sidebar__new {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--accent-glow);
+  border: 1px solid var(--border-light);
+  color: var(--accent);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sidebar__new:hover {
+  background: var(--accent-dim);
+  color: #fff;
+}
+.sidebar__search {
+  margin: 0 12px 8px;
+  position: relative;
+}
+.sidebar__search input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px 6px 28px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.sidebar__search input:focus { border-color: var(--accent-dim); }
+.sidebar__search input::placeholder { color: var(--text-faint); }
+.sidebar__search-icon {
+  position: absolute;
+  left: 8px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.sidebar__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+.sidebar__list::-webkit-scrollbar { width: 4px; }
+.sidebar__list::-webkit-scrollbar-track { background: transparent; }
+.sidebar__list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+.conv-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.conv-item:hover { background: var(--bg-hover); }
+.conv-item--active {
+  background: var(--bg-hover);
+  border-color: var(--border-light);
+}
+.conv-item__title {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.conv-item__meta {
+  font-size: 10px;
+  color: var(--text-faint);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.conv-item__dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.conv-item--active .conv-item__dot { background: var(--accent); }
+
+.sidebar__footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar__avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.sidebar__user {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar__user-name {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+}
+.sidebar__user-plan {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+/* ===== Chat Area (Center) ===== */
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.chat__header {
+  height: 44px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.chat__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.chat__title-meta {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-left: 8px;
+}
+.chat__actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.chat__btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: all 0.2s;
+}
+.chat__btn:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+.chat__btn--danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.chat__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 0;
+  scroll-behavior: smooth;
+}
+.chat__body::-webkit-scrollbar { width: 6px; }
+.chat__body::-webkit-scrollbar-track { background: transparent; }
+.chat__body::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+.msg {
+  max-width: 760px;
+  margin: 0 auto 16px;
+  padding: 0 24px;
+  animation: msg-in 0.3s ease;
+}
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.msg__avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+.msg__avatar--user {
+  background: linear-gradient(135deg, #2a5e52, #1a3e36);
+  color: var(--accent);
+}
+.msg__avatar--ai {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+  color: #fff;
+}
+.msg__role {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.msg__role--ai { color: var(--accent); }
+.msg__time {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.msg__content {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  padding-left: 30px;
+}
+.msg__content--user {
+  background: var(--user-bubble);
+  border-radius: 0 12px 12px 12px;
+  padding: 12px 16px;
+  margin-left: 30px;
+  border: 1px solid var(--border);
+}
+
+/* AI Command Block */
+.cmd-block {
+  margin-top: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  background: var(--code-bg);
+}
+.cmd-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--bg-panel-2);
+  border-bottom: 1px solid var(--border);
+}
+.cmd-block__label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cmd-block__shell {
+  font-size: 10px;
+  color: var(--text-faint);
+  padding: 2px 6px;
+  background: var(--bg-input);
+  border-radius: 4px;
+}
+.cmd-block__copy {
+  font-size: 10px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.cmd-block__copy:hover { color: var(--accent); background: var(--bg-hover); }
+.cmd-block__code {
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre;
+}
+.cmd-block__code .kw { color: var(--accent); }
+.cmd-block__code .flag { color: var(--warning); }
+.cmd-block__code .path { color: #7dc9ff; }
+.cmd-block__code .comment { color: var(--text-faint); }
+
+/* Explanation segments */
+.explain {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.explain__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+.explain__tag {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+.explain__tag--safe { background: rgba(0, 212, 160, 0.12); color: var(--accent); }
+.explain__tag--warn { background: rgba(255, 179, 71, 0.12); color: var(--warning); }
+.explain__tag--danger { background: rgba(255, 92, 92, 0.12); color: var(--danger); }
+
+/* Danger banner */
+.danger-banner {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--danger-glow);
+  border: 1px solid rgba(255, 92, 92, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.danger-banner__icon {
+  font-size: 14px;
+  color: var(--danger);
+}
+.danger-banner__text {
+  font-size: 12px;
+  color: var(--danger);
+  font-weight: 500;
+}
+.danger-banner__hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+/* Action buttons */
+.msg-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  padding-left: 30px;
+}
+.msg-action {
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  transition: all 0.2s;
+}
+.msg-action--run {
+  background: var(--accent-glow);
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+.msg-action--run:hover {
+  background: var(--accent);
+  color: #000;
+}
+.msg-action--copy:hover { border-color: var(--accent-dim); color: var(--accent); }
+.msg-action--regen:hover { border-color: var(--warning); color: var(--warning); }
+.msg-action kbd {
+  font-size: 9px;
+  padding: 1px 4px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  margin-left: 4px;
+  border: 1px solid var(--border);
+}
+
+/* Typing indicator */
+.typing {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+}
+.typing__dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  animation: typing-bounce 1.4s infinite;
+}
+.typing__dot:nth-child(2) { animation-delay: 0.2s; }
+.typing__dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ===== Input Area (Bottom) ===== */
+.input-area {
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-panel);
+}
+.input-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  position: relative;
+}
+.input-box {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  padding-right: 100px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  min-height: 52px;
+  max-height: 200px;
+  transition: border-color 0.2s;
+}
+.input-box:focus { border-color: var(--accent-dim); }
+.input-box::placeholder { color: var(--text-faint); }
+.input-send {
+  position: absolute;
+  right: 10px; bottom: 10px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.input-send:hover { background: #00f0b0; }
+.input-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.input-hint {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+.input-hint kbd {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 1px 5px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+/* ===== Status Bar ===== */
+.statusbar {
+  height: 24px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 10px;
+  color: var(--text-faint);
+  gap: 16px;
+  flex-shrink: 0;
+}
+.statusbar__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.statusbar__branch { color: var(--accent); }
+.statusbar__sep { color: var(--text-faint); opacity: 0.4; }
+
+/* ===== Activation Screen ===== */
+.activation {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 0.4s, visibility 0.4s;
+}
+.activation.hidden { opacity: 0; visibility: hidden; }
+.activation::before {
+  content: '';
+  position: absolute;
+  width: 500px; height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-glow), transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.activation__card {
+  position: relative;
+  width: 420px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 40px 32px;
+  text-align: center;
+}
+.activation__logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+.activation__subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+}
+.activation__field {
+  margin-bottom: 16px;
+  text-align: left;
+}
+.activation__label {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.activation__input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.activation__input:focus { border-color: var(--accent-dim); }
+.activation__input::placeholder { color: var(--text-faint); }
+.activation__btn {
+  width: 100%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+.activation__btn:hover { background: #00f0b0; transform: translateY(-1px); }
+.activation__hint {
+  margin-top: 20px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.activation__demo {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ===== Modal (danger confirm) ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+.modal-overlay.show { opacity: 1; visibility: visible; }
+.modal {
+  width: 440px;
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 92, 92, 0.3);
+  border-radius: 16px;
+  padding: 28px;
+  transform: scale(0.95);
+  transition: transform 0.2s;
+}
+.modal-overlay.show .modal { transform: scale(1); }
+.modal__icon {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--danger-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+.modal__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--danger);
+  margin-bottom: 8px;
+}
+.modal__desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.modal__cmd {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--danger);
+  margin-bottom: 20px;
+  white-space: pre-wrap;
+}
+.modal__actions {
+  display: flex;
+  gap: 10px;
+}
+.modal__btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+.modal__btn--cancel {
+  background: transparent;
+  color: var(--text-dim);
+}
+.modal__btn--cancel:hover { background: var(--bg-hover); }
+.modal__btn--confirm {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+.modal__btn--confirm:hover { background: #ff7a7a; }
+
+/* ===== Empty state ===== */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+}
+.empty-state__icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+.empty-state__text {
+  font-size: 13px;
+}
+.empty-state__hint {
+  font-size: 11px;
+  margin-top: 6px;
+  color: var(--text-faint);
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Activation Screen ===== -->
+<div class="activation" id="activation">
+  <div class="activation__card">
+    <div class="activation__logo">ask-tui</div>
+    <div class="activation__subtitle">AI 命令行助手 · 邀请制激活</div>
+    <div class="activation__field">
+      <div class="activation__label">邀请码</div>
+      <input type="text" class="activation__input" id="inviteCode" placeholder="ASK-XXXX-XXX" value="ASK-8X2K-9ZQ">
+    </div>
+    <div class="activation__field">
+      <div class="activation__label">你的昵称</div>
+      <input type="text" class="activation__input" id="userName" placeholder="起个好听的名字" value="小明">
+    </div>
+    <button class="activation__btn" onclick="activate()">激活并开始使用</button>
+    <div class="activation__hint">首次使用需要输入邀请码，激活后无需再次输入</div>
+    <div class="activation__demo" onclick="activate()">[ 跳过激活，直接体验 Demo ]</div>
+  </div>
+</div>
+
+<!-- ===== Main Interface ===== -->
+<div class="titlebar">
+  <div class="titlebar__dots">
+    <div class="titlebar__dot titlebar__dot--red"></div>
+    <div class="titlebar__dot titlebar__dot--yellow"></div>
+    <div class="titlebar__dot titlebar__dot--green"></div>
+  </div>
+  <div class="titlebar__title">ask-tui</div>
+  <div class="titlebar__badge">v0.1.0</div>
+  <div class="titlebar__status">云端已连接</div>
+</div>
+
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar__header">
+      <div class="sidebar__title">对话历史</div>
+      <div class="sidebar__new" onclick="newConversation()" title="新建对话">+</div>
+    </div>
+    <div class="sidebar__search">
+      <span class="sidebar__search-icon">&#128269;</span>
+      <input type="text" placeholder="搜索对话..." id="searchInput">
+    </div>
+    <div class="sidebar__list" id="convList">
+      <div class="conv-item conv-item--active" onclick="switchConv(0, this)">
+        <div class="conv-item__title">查找大文件</div>
+        <div class="conv-item__meta"><span class="conv-item__dot"></span> 2 分钟前</div>
+      </div>
+      <div class="conv-item" onclick="switchConv(1, this)">
+        <div class="conv-item__title">Git 撤销提交</div>
+        <div class="conv-item__meta"><span class="conv-item__dot"></span> 1 小时前</div>
+      </div>
+      <div class="conv-item" onclick="switchConv(2, this)">
+        <div class="conv-item__title">查看端口占用</div>
+        <div class="conv-item__meta"><span class="conv-item__dot"></span> 昨天</div>
+      </div>
+      <div class="conv-item" onclick="switchConv(3, this)">
+        <div class="conv-item__title">批量重命名文件</div>
+        <div class="conv-item__meta"><span class="conv-item__dot"></span> 3 天前</div>
+      </div>
+      <div class="conv-item" onclick="switchConv(4, this)">
+        <div class="conv-item__title">压缩项目文件夹</div>
+        <div class="conv-item__meta"><span class="conv-item__dot"></span> 5 天前</div>
+      </div>
+    </div>
+    <div class="sidebar__footer">
+      <div class="sidebar__avatar" id="userAvatar">明</div>
+      <div class="sidebar__user">
+        <div class="sidebar__user-name" id="userNameDisplay">小明</div>
+        <div class="sidebar__user-plan">邀请用户 · 免费版</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat">
+    <div class="chat__header">
+      <div class="chat__title" id="chatTitle">查找大文件</div>
+      <div class="chat__title-meta" id="chatMeta">3 条消息 · 2 分钟前</div>
+      <div class="chat__actions">
+        <button class="chat__btn" onclick="clearChat()">清空</button>
+        <button class="chat__btn chat__btn--danger" onclick="deleteConv()">删除</button>
+      </div>
+    </div>
+    <div class="chat__body" id="chatBody">
+      <!-- Messages will be injected here -->
+    </div>
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea class="input-box" id="inputBox" placeholder="输入你的问题，比如：怎么查找大于 1GB 的文件？" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="input-send" id="sendBtn" onclick="sendMessage()">
+          发送
+          <kbd style="font-size:9px;opacity:0.7;">Ctrl+↵</kbd>
+        </button>
+        <div class="input-hint">
+          <span><kbd>Tab</kbd> 切换面板 · <kbd>↑↓</kbd> 翻历史 · <kbd>Ctrl+E</kbd> 执行命令</span>
+          <span>GLM-4-Flash · 历史保留 7 天</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Status Bar -->
+<div class="statusbar">
+  <div class="statusbar__item">
+    <span class="statusbar__branch">main</span>
+  </div>
+  <span class="statusbar__sep">|</span>
+  <div class="statusbar__item">PowerShell 7.4</div>
+  <span class="statusbar__sep">|</span>
+  <div class="statusbar__item">UTF-8</div>
+  <span class="statusbar__sep">|</span>
+  <div class="statusbar__item">Windows 11</div>
+  <div style="margin-left:auto" class="statusbar__item">
+    <span style="color:var(--accent);">●</span> 在线 · 0 延迟
+  </div>
+</div>
+
+<!-- ===== Danger Confirm Modal ===== -->
+<div class="modal-overlay" id="dangerModal">
+  <div class="modal">
+    <div class="modal__icon">&#9888;</div>
+    <div class="modal__title">危险命令确认</div>
+    <div class="modal__desc">以下命令可能导致数据丢失或系统变更，请确认后再执行：</div>
+    <div class="modal__cmd" id="modalCmd"></div>
+    <div class="modal__actions">
+      <button class="modal__btn modal__btn--cancel" onclick="closeModal()">取消</button>
+      <button class="modal__btn modal__btn--confirm" onclick="confirmExec()">我已了解风险，执行</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Conversation Data =====
+const conversations = [
+  {
+    title: '查找大文件',
+    messages: [
+      { role: 'user', content: '帮我查找 C 盘下大于 1GB 的文件', time: '14:32' },
+      {
+        role: 'ai',
+        content: '好的，以下命令可以查找 C 盘下大于 1GB 的文件：',
+        command: 'Get-ChildItem -Path C:\\ -Recurse -File | Where-Object { $_.Length -gt 1GB } | Select-Object FullName, @{N="Size(GB)";E={[math]::Round($_.Length/1GB,2)}} | Sort-Object "Size(GB)" -Descending',
+        commandParts: [
+          { text: 'Get-ChildItem', type: 'kw' },
+          { text: ' -Path C:\\ -Recurse -File', type: 'flag' },
+          { text: ' | Where-Object { $_.Length -gt 1GB }', type: 'normal' },
+          { text: ' | Select-Object FullName, @{...}', type: 'normal' },
+          { text: ' | Sort-Object "Size(GB)" -Descending', type: 'flag' }
+        ],
+        explanation: [
+          { tag: 'Get-ChildItem', level: 'safe', text: '递归遍历 C 盘下所有文件（-Recurse 表示包含子目录）' },
+          { tag: 'Where-Object', level: 'safe', text: '过滤条件：文件大小大于 1GB' },
+          { tag: 'Select-Object', level: 'safe', text: '输出文件路径和大小（GB 为单位，保留 2 位小数）' },
+          { tag: 'Sort-Object', level: 'safe', text: '按文件大小降序排列，最大的排在最前面' }
+        ],
+        danger: 'safe',
+        time: '14:32'
+      },
+      { role: 'user', content: '能改成只看前 10 个最大的吗', time: '14:33' },
+      {
+        role: 'ai',
+        content: '在命令末尾加上 Select-Object -First 10 即可：',
+        command: 'Get-ChildItem -Path C:\\ -Recurse -File | Where-Object { $_.Length -gt 1GB } | Sort-Object Length -Descending | Select-Object -First 10 FullName, @{N="Size(GB)";E={[math]::Round($_.Length/1GB,2)}}',
+        commandParts: [
+          { text: 'Get-ChildItem', type: 'kw' },
+          { text: ' -Path C:\\ -Recurse -File', type: 'flag' },
+          { text: ' | Where-Object { $_.Length -gt 1GB }', type: 'normal' },
+          { text: ' | Sort-Object Length -Descending', type: 'flag' },
+          { text: ' | Select-Object -First 10 ...', type: 'normal' }
+        ],
+        explanation: [
+          { tag: 'Sort-Object', level: 'safe', text: '先按文件大小降序排列' },
+          { tag: '-First 10', level: 'safe', text: '只取前 10 条结果（最大的 10 个文件）' }
+        ],
+        danger: 'safe',
+        time: '14:33'
+      }
+    ]
+  },
+  {
+    title: 'Git 撤销提交',
+    messages: [
+      { role: 'user', content: 'Git 怎么撤销最后一次提交？保留改动', time: '13:01' },
+      {
+        role: 'ai',
+        content: '使用 --soft 参数可以撤销提交但保留你的代码改动：',
+        command: 'git reset --soft HEAD~1',
+        commandParts: [
+          { text: 'git', type: 'kw' },
+          { text: ' reset', type: 'normal' },
+          { text: ' --soft', type: 'flag' },
+          { text: ' HEAD~1', type: 'path' }
+        ],
+        explanation: [
+          { tag: 'reset', level: 'warn', text: '重置操作，会移动 HEAD 指针' },
+          { tag: '--soft', level: 'safe', text: '软重置：只撤销提交记录，代码改动保留在暂存区' },
+          { tag: 'HEAD~1', level: 'warn', text: '回退到上一个提交（~1 表示后退一步）' }
+        ],
+        danger: 'warn',
+        time: '13:01'
+      }
+    ]
+  },
+  {
+    title: '查看端口占用',
+    messages: [
+      { role: 'user', content: '8080 端口被谁占用了，怎么查', time: '昨天 10:15' },
+      {
+        role: 'ai',
+        content: '用以下命令查找占用 8080 端口的进程：',
+        command: 'netstat -ano | findstr :8080',
+        commandParts: [
+          { text: 'netstat', type: 'kw' },
+          { text: ' -ano', type: 'flag' },
+          { text: ' | findstr :8080', type: 'normal' }
+        ],
+        explanation: [
+          { tag: 'netstat', level: 'safe', text: '显示所有网络连接和端口' },
+          { tag: '-ano', level: 'safe', text: 'a=所有连接，n=数字格式显示地址，o=显示进程 PID' },
+          { tag: 'findstr', level: 'safe', text: '过滤出包含 :8080 的行' }
+        ],
+        danger: 'safe',
+        time: '昨天 10:15'
+      },
+      { role: 'user', content: '查到了 PID 是 12345，怎么杀掉它', time: '昨天 10:17' },
+      {
+        role: 'ai',
+        content: '使用 taskkill 终止该进程：',
+        command: 'taskkill /PID 12345 /F',
+        commandParts: [
+          { text: 'taskkill', type: 'kw' },
+          { text: ' /PID 12345', type: 'path' },
+          { text: ' /F', type: 'flag' }
+        ],
+        explanation: [
+          { tag: 'taskkill', level: 'danger', text: '终止指定进程，强制结束' },
+          { tag: '/PID 12345', level: 'warn', text: '指定要终止的进程 ID' },
+          { tag: '/F', level: 'danger', text: 'Force：强制终止，不等进程自己退出' }
+        ],
+        danger: 'danger',
+        time: '昨天 10:17'
+      }
+    ]
+  },
+  {
+    title: '批量重命名文件',
+    messages: [
+      { role: 'user', content: '把当前目录下所有 .txt 文件改成 .md', time: '3 天前' },
+      {
+        role: 'ai',
+        content: '用 PowerShell 的 Rename-Item 批量重命名：',
+        command: 'Get-ChildItem *.txt | Rename-Item -NewName { $_.Name -replace \'\.txt$\', \'.md\' }',
+        commandParts: [
+          { text: 'Get-ChildItem', type: 'kw' },
+          { text: ' *.txt', type: 'path' },
+          { text: ' | Rename-Item', type: 'normal' },
+          { text: ' -NewName { ... }', type: 'flag' }
+        ],
+        explanation: [
+          { tag: 'Get-ChildItem', level: 'safe', text: '获取当前目录下所有 .txt 文件' },
+          { tag: 'Rename-Item', level: 'warn', text: '批量重命名操作' },
+          { tag: '-replace', level: 'warn', text: '正则替换：把文件名末尾的 .txt 替换成 .md' }
+        ],
+        danger: 'warn',
+        time: '3 天前'
+      }
+    ]
+  },
+  {
+    title: '压缩项目文件夹',
+    messages: [
+      { role: 'user', content: '把 myproject 文件夹压缩成 zip', time: '5 天前' },
+      {
+        role: 'ai',
+        content: '使用 PowerShell 内置的 Compress-Archive 命令：',
+        command: 'Compress-Archive -Path .\\myproject -DestinationPath .\\myproject.zip',
+        commandParts: [
+          { text: 'Compress-Archive', type: 'kw' },
+          { text: ' -Path .\\myproject', type: 'path' },
+          { text: ' -DestinationPath .\\myproject.zip', type: 'flag' }
+        ],
+        explanation: [
+          { tag: 'Compress-Archive', level: 'safe', text: 'PowerShell 内置压缩命令，不需要安装额外工具' },
+          { tag: '-Path', level: 'safe', text: '指定要压缩的源文件夹路径' },
+          { tag: '-DestinationPath', level: 'safe', text: '指定压缩包输出路径和文件名' }
+        ],
+        danger: 'safe',
+        time: '5 天前'
+      }
+    ]
+  }
+];
+
+let currentConv = 0;
+
+// ===== Activation =====
+function activate() {
+  const code = document.getElementById('inviteCode').value;
+  const name = document.getElementById('userName').value;
+  if (name) {
+    document.getElementById('userNameDisplay').textContent = name;
+    document.getElementById('userAvatar').textContent = name[0];
+  }
+  document.getElementById('activation').classList.add('hidden');
+  setTimeout(() => {
+    renderConversation(0);
+  }, 300);
+}
+
+// ===== Render Conversation =====
+function renderConversation(idx) {
+  currentConv = idx;
+  const conv = conversations[idx];
+  document.getElementById('chatTitle').textContent = conv.title;
+  document.getElementById('chatMeta').textContent = `${conv.messages.length} 条消息`;
+
+  const body = document.getElementById('chatBody');
+  body.innerHTML = '';
+
+  conv.messages.forEach(msg => {
+    body.appendChild(createMessageElement(msg));
+  });
+
+  body.scrollTop = body.scrollHeight;
+}
+
+function createMessageElement(msg) {
+  const div = document.createElement('div');
+  div.className = 'msg';
+
+  if (msg.role === 'user') {
+    div.innerHTML = `
+      <div class="msg__header">
+        <div class="msg__avatar msg__avatar--user">你</div>
+        <div class="msg__role">你</div>
+        <div class="msg__time">${msg.time}</div>
+      </div>
+      <div class="msg__content msg__content--user">${msg.content}</div>
+    `;
+  } else {
+    let html = `
+      <div class="msg__header">
+        <div class="msg__avatar msg__avatar--ai">AI</div>
+        <div class="msg__role msg__role--ai">ask-tui</div>
+        <div class="msg__time">${msg.time}</div>
+      </div>
+      <div class="msg__content">${msg.content}
+    `;
+
+    if (msg.command) {
+      let codeHtml = '';
+      if (msg.commandParts) {
+        msg.commandParts.forEach(p => {
+          if (p.type === 'kw') codeHtml += `<span class="kw">${p.text}</span>`;
+          else if (p.type === 'flag') codeHtml += `<span class="flag">${p.text}</span>`;
+          else if (p.type === 'path') codeHtml += `<span class="path">${p.text}</span>`;
+          else codeHtml += p.text;
+        });
+      } else {
+        codeHtml = msg.command;
+      }
+
+      html += `
+        <div class="cmd-block">
+          <div class="cmd-block__header">
+            <div class="cmd-block__label">&#128187; PowerShell 命令</div>
+            <span class="cmd-block__shell">PS 7.4</span>
+            <span class="cmd-block__copy" onclick="copyCmd(this)">复制</span>
+          </div>
+          <div class="cmd-block__code">${codeHtml}</div>
+        </div>
+      `;
+    }
+
+    if (msg.explanation) {
+      html += '<div class="explain">';
+      msg.explanation.forEach(e => {
+        html += `
+          <div class="explain__item">
+            <span class="explain__tag explain__tag--${e.level}">${e.tag}</span>
+            <span>${e.text}</span>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+
+    if (msg.danger === 'danger') {
+      html += `
+        <div class="danger-banner">
+          <span class="danger-banner__icon">&#9888;</span>
+          <span class="danger-banner__text">危险命令：此操作不可逆，可能导致数据丢失</span>
+          <span class="danger-banner__hint">执行前请二次确认</span>
+        </div>
+      `;
+    } else if (msg.danger === 'warn') {
+      html += `
+        <div class="danger-banner" style="background:rgba(255,179,71,0.08);border-color:rgba(255,179,71,0.2);">
+          <span class="danger-banner__icon" style="color:var(--warning);">&#9888;</span>
+          <span class="danger-banner__text" style="color:var(--warning);">注意：此命令会修改文件或系统状态</span>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="msg-actions">
+        <button class="msg-action msg-action--run" onclick="runCommand('${msg.danger}', \`${msg.command.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)">
+          &#9654; 执行 <kbd>Ctrl+E</kbd>
+        </button>
+        <button class="msg-action msg-action--copy" onclick="copyCmd(this)">复制命令</button>
+        <button class="msg-action msg-action--regen">重新生成</button>
+      </div>
+    `;
+
+    html += '</div>';
+    div.innerHTML = html;
+  }
+
+  return div;
+}
+
+// ===== Switch Conversation =====
+function switchConv(idx, el) {
+  document.querySelectorAll('.conv-item').forEach(e => e.classList.remove('conv-item--active'));
+  el.classList.add('conv-item--active');
+  renderConversation(idx);
+}
+
+// ===== Send Message =====
+function sendMessage() {
+  const input = document.getElementById('inputBox');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Add user message
+  const body = document.getElementById('chatBody');
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const userMsg = { role: 'user', content: text, time };
+  body.appendChild(createMessageElement(userMsg));
+  body.scrollTop = body.scrollHeight;
+
+  // Add typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'msg';
+  typingDiv.id = 'typingIndicator';
+  typingDiv.innerHTML = `
+    <div class="msg__header">
+      <div class="msg__avatar msg__avatar--ai">AI</div>
+      <div class="msg__role msg__role--ai">ask-tui</div>
+      <div class="msg__time">${time}</div>
+    </div>
+    <div class="msg__content">
+      <div class="typing">
+        <div class="typing__dot"></div>
+        <div class="typing__dot"></div>
+        <div class="typing__dot"></div>
+      </div>
+    </div>
+  `;
+  body.appendChild(typingDiv);
+  body.scrollTop = body.scrollHeight;
+
+  input.value = '';
+  autoResize(input);
+
+  // Simulate AI response after 1.5s
+  setTimeout(() => {
+    typingDiv.remove();
+    const aiMsg = generateMockResponse(text, time);
+    body.appendChild(createMessageElement(aiMsg));
+    body.scrollTop = body.scrollHeight;
+  }, 1500);
+}
+
+// ===== Mock AI Response =====
+function generateMockResponse(input, time) {
+  const lower = input.toLowerCase();
+
+  if (lower.includes('删除') || lower.includes('del') || lower.includes('rm')) {
+    return {
+      role: 'ai',
+      content: '这个操作有风险，请仔细确认。以下是删除命令：',
+      command: 'Remove-Item -Path "C:\\target" -Recurse -Force',
+      commandParts: [
+        { text: 'Remove-Item', type: 'kw' },
+        { text: ' -Path "C:\\target"', type: 'path' },
+        { text: ' -Recurse', type: 'flag' },
+        { text: ' -Force', type: 'flag' }
+      ],
+      explanation: [
+        { tag: 'Remove-Item', level: 'danger', text: '删除文件或文件夹' },
+        { tag: '-Recurse', level: 'danger', text: '递归删除：包含所有子目录和文件' },
+        { tag: '-Force', level: 'danger', text: '强制删除：忽略只读属性，不询问确认' }
+      ],
+      danger: 'danger',
+      time
+    };
+  }
+
+  if (lower.includes('git')) {
+    return {
+      role: 'ai',
+      content: '以下是 Git 相关命令：',
+      command: 'git status',
+      commandParts: [
+        { text: 'git', type: 'kw' },
+        { text: ' status', type: 'normal' }
+      ],
+      explanation: [
+        { tag: 'git status', level: 'safe', text: '查看当前仓库状态：有哪些文件被修改、暂存或未跟踪' }
+      ],
+      danger: 'safe',
+      time
+    };
+  }
+
+  // Default response
+  return {
+    role: 'ai',
+    content: '这是一个示例回复。在真实项目中，这里会通过云端 API 调用 GLM-4-Flash 生成命令。你现在可以试试问："查找大于 100MB 的文件"或"Git 怎么撤销提交"',
+    command: 'Write-Output "Hello from ask-tui"',
+    commandParts: [
+      { text: 'Write-Output', type: 'kw' },
+      { text: ' "Hello from ask-tui"', type: 'path' }
+    ],
+    explanation: [
+      { tag: 'Write-Output', level: 'safe', text: '向控制台输出文本，这是 PowerShell 最基本的输出命令' }
+    ],
+    danger: 'safe',
+    time
+  };
+}
+
+// ===== Run Command =====
+function runCommand(danger, cmd) {
+  if (danger === 'danger') {
+    document.getElementById('modalCmd').textContent = cmd;
+    document.getElementById('dangerModal').classList.add('show');
+  } else {
+    // Simulate execution
+    const body = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'msg';
+    div.innerHTML = `
+      <div class="msg__header">
+        <div class="msg__avatar msg__avatar--ai" style="background:linear-gradient(135deg,#52c41a,#389e0d);">&#10003;</div>
+        <div class="msg__role" style="color:#52c41a;">执行结果</div>
+        <div class="msg__time">${new Date().toTimeString().slice(0,5)}</div>
+      </div>
+      <div class="msg__content">
+        <div style="background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text-dim);">
+          <span style="color:var(--accent);">PS&gt;</span> ${cmd}<br>
+          <span style="color:var(--text-faint);">命令执行完成（退出码 0）</span>
+        </div>
+      </div>
+    `;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+}
+
+function closeModal() {
+  document.getElementById('dangerModal').classList.remove('show');
+}
+
+function confirmExec() {
+  closeModal();
+  const body = document.getElementById('chatBody');
+  const div = document.createElement('div');
+  div.className = 'msg';
+  div.innerHTML = `
+    <div class="msg__header">
+      <div class="msg__avatar msg__avatar--ai" style="background:linear-gradient(135deg,#ff5c5c,#c0392b);">!</div>
+      <div class="msg__role" style="color:var(--danger);">执行结果</div>
+      <div class="msg__time">${new Date().toTimeString().slice(0,5)}</div>
+    </div>
+    <div class="msg__content">
+      <div style="background:var(--code-bg);border:1px solid rgba(255,92,92,0.25);border-radius:8px;padding:12px 14px;font-family:var(--font-mono);font-size:12px;">
+        <span style="color:var(--danger);">PS&gt;</span> <span style="color:var(--text);">命令已强制执行</span><br>
+        <span style="color:var(--text-faint);">退出码 0 · 用时 0.3s</span>
+      </div>
+    </div>
+  `;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+// ===== Copy Command =====
+function copyCmd(el) {
+  el.textContent = '已复制!';
+  setTimeout(() => { el.textContent = '复制'; }, 1500);
+}
+
+// ===== New Conversation =====
+function newConversation() {
+  const body = document.getElementById('chatBody');
+  body.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-state__icon">&#128172;</div>
+      <div class="empty-state__text">开始新对话</div>
+      <div class="empty-state__hint">在下方输入框输入你的问题</div>
+    </div>
+  `;
+  document.getElementById('chatTitle').textContent = '新对话';
+  document.getElementById('chatMeta').textContent = '0 条消息';
+  document.querySelectorAll('.conv-item').forEach(e => e.classList.remove('conv-item--active'));
+  document.getElementById('inputBox').focus();
+}
+
+// ===== Clear / Delete =====
+function clearChat() {
+  if (confirm('确定清空当前对话？')) {
+    newConversation();
+  }
+}
+function deleteConv() {
+  if (confirm('确定删除这个对话？删除后不可恢复。')) {
+    newConversation();
+  }
+}
+
+// ===== Input Handling =====
+function handleKey(e) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+}
+
+// ===== Search =====
+document.getElementById('searchInput').addEventListener('input', function(e) {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.conv-item').forEach(item => {
+    const title = item.querySelector('.conv-item__title').textContent.toLowerCase();
+    item.style.display = title.includes(q) ? '' : 'none';
+  });
+});
+
+// ===== Init =====
+// Activation screen handles initial render
+</script>
+</body>
+</html>

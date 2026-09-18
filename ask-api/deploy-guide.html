@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ask-tui 部署指南</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #21262d;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.7; }
+  .container { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .header { border-bottom: 1px solid var(--border); padding-bottom: 2rem; margin-bottom: 2.5rem; }
+  .header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .header .subtitle { color: var(--text-dim); }
+  section { margin-bottom: 2.5rem; }
+  h2 { font-size: 1.3rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 1rem; }
+  h3 { font-size: 1.05rem; margin: 1.2rem 0 0.6rem; color: var(--accent); }
+  p { margin-bottom: 0.7rem; }
+  ul, ol { margin-left: 1.5rem; margin-bottom: 0.7rem; }
+  li { margin-bottom: 0.35rem; color: var(--text-dim); }
+  li strong { color: var(--text); }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.2rem; overflow-x: auto; margin: 0.8rem 0 1.2rem; font-size: 0.84rem; }
+  code { font-family: var(--mono); font-size: 0.84rem; }
+  p code, li code { background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 0.25rem; color: var(--accent); }
+  pre code { background: none; padding: 0; color: var(--text); }
+  .callout { border-left: 3px solid var(--accent); background: rgba(88,166,255,0.06); padding: 0.8rem 1.2rem; border-radius: 0 0.4rem 0.4rem 0; margin: 1rem 0; }
+  .callout.warn { border-color: var(--yellow); background: rgba(210,153,34,0.06); }
+  .callout.danger { border-color: var(--red); background: rgba(248,81,73,0.06); }
+  .callout.ok { border-color: var(--green); background: rgba(63,185,80,0.06); }
+  table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1.2rem; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-dim); font-weight: 600; }
+  .step { background: var(--surface); border: 1px solid var(--border); border-radius: 0.6rem; padding: 1rem 1.5rem; margin: 1rem 0; }
+  .step-num { display: inline-block; width: 1.8rem; height: 1.8rem; line-height: 1.8rem; text-align: center; border-radius: 50%; background: var(--accent); color: var(--bg); font-weight: 700; font-size: 0.85rem; margin-right: 0.5rem; }
+  .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 1rem; font-size: 0.78rem; font-family: var(--mono); border: 1px solid var(--border); }
+  .badge.green { color: var(--green); border-color: rgba(63,185,80,0.3); }
+  .badge.blue { color: var(--accent); border-color: rgba(88,166,255,0.3); }
+  .badge.yellow { color: var(--yellow); border-color: rgba(210,153,34,0.3); }
+  .badge.purple { color: var(--purple); border-color: rgba(188,140,255,0.3); }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .compare .col { background: var(--surface); border: 1px solid var(--border); border-radius: 0.6rem; padding: 1rem 1.2rem; }
+  .compare .col h4 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .compare .col.render h4 { color: var(--accent); }
+  .compare .col.fly h4 { color: var(--purple); }
+  .footer { border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 3rem; color: var(--text-dim); font-size: 0.82rem; text-align: center; }
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.5rem; margin-bottom: 2rem; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ul { list-style: none; margin: 0; }
+  .toc li { margin-bottom: 0.2rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>ask-tui 部署指南</h1>
+  <div class="subtitle">Render (Postgres) 和 Fly.io (SQLite 持久卷) 双方案</div>
+  <div style="margin-top: 1rem;">
+    <span class="badge blue">Render Free</span>
+    <span class="badge purple">Fly.io Free</span>
+    <span class="badge green">117 tests</span>
+    <span class="badge yellow">v0.3.0</span>
+  </div>
+</div>
+
+<div class="toc">
+  <strong>目录</strong>
+  <ul>
+    <li><a href="#prereq">前置准备</a></li>
+    <li><a href="#compare">方案对比</a></li>
+    <li><a href="#render">方案 A：部署到 Render（推荐）</a></li>
+    <li><a href="#fly">方案 B：部署到 Fly.io（持久化更好）</a></li>
+    <li><a href="#postdeploy">部署后配置</a></li>
+    <li><a href="#distribute">TUI 打包分发</a></li>
+    <li><a href="#troubleshoot">常见问题</a></li>
+  </ul>
+</div>
+
+<section id="prereq">
+  <h2>前置准备</h2>
+  <ol>
+    <li><strong>智谱 API Key</strong> — 访问 <a href="https://bigmodel.cn/usercenter/proj-mgmt/apikeys" style="color:var(--accent)">智谱开放平台</a> 获取 GLM-4-Flash 的 API Key（免费）</li>
+    <li><strong>GitHub 账号</strong> — 用于托管代码仓库</li>
+    <li><strong>Render 账号</strong> 或 <strong>Fly.io 账号</strong> — 二选一即可</li>
+  </ol>
+  <p>代码已初始化为 Git 仓库，需要推送到 GitHub。</p>
+</section>
+
+<section id="compare">
+  <h2>方案对比</h2>
+  <div class="compare">
+    <div class="col render">
+      <h4>方案 A: Render</h4>
+      <p><span class="badge blue">推荐</span></p>
+      <ul>
+        <li>免费 750 小时/月</li>
+        <li>512MB 内存</li>
+        <li>PostgreSQL 数据库（1GB）</li>
+        <li>15 分钟无流量自动休眠</li>
+        <li>冷启动约 1 分钟</li>
+        <li><strong>缺点：数据库 90 天后过期需重建</strong></li>
+        <li><strong>缺点：无持久化磁盘</strong></li>
+      </ul>
+    </div>
+    <div class="col fly">
+      <h4>方案 B: Fly.io</h4>
+      <p><span class="badge purple">持久化更好</span></p>
+      <ul>
+        <li>免费 3 个 VM (256MB)</li>
+        <li>3GB 持久化卷</li>
+        <li>SQLite 直接持久化</li>
+        <li>空闲自动停机/启动</li>
+        <li>东京区域（离中国近）</li>
+        <li><strong>优点：数据不丢失</strong></li>
+        <li><strong>缺点：需安装 flyctl CLI</strong></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="render">
+  <h2>方案 A：部署到 Render</h2>
+
+  <div class="callout">
+    <strong>架构说明：</strong>Render 免费套餐不支持持久化磁盘，因此使用 Render PostgreSQL 数据库。后端 <code>database.py</code> 已自动适配：检测到 <code>postgresql://</code> URL 会自动转为 <code>postgresql+asyncpg://</code>，无需手动修改代码。
+  </div>
+
+  <div class="step">
+    <span class="step-num">1</span><strong>推送到 GitHub</strong>
+    <pre><code># 在 GitHub 创建新仓库 ask-tui
+# 然后在本地推送：
+
+cd /workspace
+git remote add origin https://github.com/你的用户名/ask-tui.git
+git branch -M main
+git push -u origin main</code></pre>
+  </div>
+
+  <div class="step">
+    <span class="step-num">2</span><strong>在 Render 创建 Blueprint</strong>
+    <ol>
+      <li>登录 <a href="https://dashboard.render.com" style="color:var(--accent)">Render Dashboard</a></li>
+      <li>点击 <code>New +</code> → <code>Blueprint</code></li>
+      <li>选择刚推送的 GitHub 仓库 <code>ask-tui</code></li>
+      <li>Render 会自动识别 <code>render.yaml</code>，显示将创建的服务：
+        <ul>
+          <li>1 个 PostgreSQL 数据库 <code>ask-api-db</code></li>
+          <li>1 个 Web Service <code>ask-api</code>（Python, Free 套餐）</li>
+        </ul>
+      </li>
+      <li>点击 <code>Apply</code> 开始创建</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <span class="step-num">3</span><strong>配置密钥</strong>
+    <p>在 Render Dashboard 的 <code>ask-api</code> 服务 → Environment 中设置：</p>
+    <ul>
+      <li><code>LLM_API_KEY</code> → 粘贴你的智谱 API Key</li>
+      <li><code>ADMIN_API_KEY</code> → 已自动生成（或手动设置一个随机字符串）</li>
+      <li><code>DATABASE_URL</code> → 已自动从 Postgres 数据库引用</li>
+    </ul>
+    <p>查看自动生成的 ADMIN_API_KEY：在 Environment 页面找到 <code>ADMIN_API_KEY</code>，点击显示值并复制保存。</p>
+  </div>
+
+  <div class="step">
+    <span class="step-num">4</span><strong>等待部署完成</strong>
+    <p>Render 会自动执行：</p>
+    <ol>
+      <li>创建 PostgreSQL 数据库</li>
+      <li>构建 Python 环境 (<code>pip install -r requirements.txt</code>)</li>
+      <li>启动服务 (<code>uvicorn app.main:app --host 0.0.0.0 --port $PORT</code>)</li>
+      <li>应用启动时自动创建所有数据库表</li>
+    </ol>
+    <p>部署成功后获得 URL：<code>https://ask-api-xxxx.onrender.com</code></p>
+  </div>
+
+  <div class="step">
+    <span class="step-num">5</span><strong>验证部署</strong>
+    <pre><code># 健康检查
+curl https://ask-api-xxxx.onrender.com/api/health
+
+# 应返回:
+# {"status":"ok","service":"ask-api","version":"0.3.0","database":"ok"}
+
+# 生成邀请码（用你的 ADMIN_API_KEY 替换）
+curl -X POST "https://ask-api-xxxx.onrender.com/api/auth/admin/invite-codes?count=10" \
+  -H "X-Admin-Key: 你的ADMIN_API_KEY"
+
+# 应返回 10 个邀请码</code></pre>
+  </div>
+
+  <div class="callout warn">
+    <strong>注意：</strong>Render 免费套餐 15 分钟无请求会自动休眠。首次请求（冷启动）需要约 30-60 秒。可设置外部定时 ping（如 UptimeRobot 每 10 分钟 ping <code>/api/health</code>）保持唤醒，但会消耗免费额度。
+  </div>
+</section>
+
+<section id="fly">
+  <h2>方案 B：部署到 Fly.io</h2>
+
+  <div class="callout ok">
+    <strong>优势：</strong>Fly.io 免费套餐支持 3GB 持久化卷，SQLite 数据库可直接持久化，不会因重启丢失数据。无需 PostgreSQL。
+  </div>
+
+  <div class="step">
+    <span class="step-num">1</span><strong>安装 flyctl CLI</strong>
+    <pre><code># macOS
+brew install flyctl
+
+# Linux
+curl -L https://fly.io/install.sh | sh
+
+# 验证
+flyctl version</code></pre>
+  </div>
+
+  <div class="step">
+    <span class="step-num">2</span><strong>登录并创建应用</strong>
+    <pre><code>flyctl auth login
+
+# 进入 ask-api 目录
+cd /workspace/ask-api
+
+# 创建应用（fly.toml 已存在，只需 launch）
+flyctl launch --no-deploy
+
+# 选择:
+#   - Region: Tokyo (NRT)
+#   - 不创建 PostgreSQL（使用 SQLite + 持久卷）
+#   - 确认 fly.toml 配置</code></pre>
+  </div>
+
+  <div class="step">
+    <span class="step-num">3</span><strong>创建持久化卷并设置密钥</strong>
+    <pre><code># 创建 1GB 持久卷
+flyctl volumes create ask_data --size 1
+
+# 设置密钥
+flyctl secrets set ADMIN_API_KEY=你的随机管理密钥
+flyctl secrets set LLM_API_KEY=你的智谱API密钥
+
+# 验证密钥（不显示值）
+flyctl secrets list</code></pre>
+  </div>
+
+  <div class="step">
+    <span class="step-num">4</span><strong>部署</strong>
+    <pre><code>flyctl deploy
+
+# 部署完成后获取 URL:
+# https://ask-api.fly.dev</code></pre>
+  </div>
+
+  <div class="step">
+    <span class="step-num">5</span><strong>验证部署</strong>
+    <pre><code># 健康检查
+curl https://ask-api.fly.dev/api/health
+
+# 生成邀请码
+curl -X POST "https://ask-api.fly.dev/api/auth/admin/invite-codes?count=10" \
+  -H "X-Admin-Key: 你的ADMIN_API_KEY"</code></pre>
+  </div>
+</section>
+
+<section id="postdeploy">
+  <h2>部署后配置</h2>
+
+  <h3>更新 TUI 客户端配置</h3>
+  <p>部署成功后，修改 TUI 客户端默认 API 地址，让朋友开箱即用：</p>
+  <pre><code># 编辑 ask-tui/config.py
+# 将 DEFAULT_CONFIG 中的 api_base_url 改为你的线上地址:
+
+DEFAULT_CONFIG = {
+    "api_base_url": "https://ask-api-xxxx.onrender.com",  # ← 改这里
+    "device_id": "",
+    "username": "",
+}</code></pre>
+
+  <h3>重新打包 TUI</h3>
+  <pre><code>cd /workspace/ask-tui
+./build.sh
+
+# 输出: dist/ask-tui (单文件可执行程序，20MB)
+# 分发给朋友即可</code></pre>
+</section>
+
+<section id="distribute">
+  <h2>TUI 打包分发流程</h2>
+
+  <div class="step">
+    <span class="step-num">1</span><strong>修改默认 API 地址</strong>
+    <p>在 <code>ask-tui/config.py</code> 的 <code>DEFAULT_CONFIG</code> 中设置线上 URL</p>
+  </div>
+
+  <div class="step">
+    <span class="step-num">2</span><strong>打包</strong>
+    <pre><code>cd ask-tui
+chmod +x build.sh
+./build.sh
+
+# 输出:
+# ✓ 打包成功!
+#   输出文件: dist/ask-tui
+#   文件大小: 20M</code></pre>
+  </div>
+
+  <div class="step">
+    <span class="step-num">3</span><strong>分发</strong>
+    <ul>
+      <li>将 <code>dist/ask-tui</code> 发送给朋友（微信/U盘/邮件均可）</li>
+      <li>同时发送一个邀请码给朋友</li>
+      <li>朋友执行 <code>./ask-tui</code> → 弹出激活界面 → 输入邀请码 → 开始使用</li>
+    </ul>
+  </div>
+
+  <div class="callout warn">
+    <strong>跨平台打包：</strong>PyInstaller 打包的程序只能在打包时的操作系统上运行。要分发给 Windows/Mac 用户，需要在对应系统上分别打包：
+    <ul>
+      <li>Windows: <code>pyinstaller ask-tui.spec</code> 生成 <code>.exe</code></li>
+      <li>macOS: <code>pyinstaller ask-tui.spec</code> 生成 macOS 可执行文件</li>
+      <li>Linux: 已打包完成 <code>dist/ask-tui</code></li>
+    </ul>
+  </div>
+</section>
+
+<section id="troubleshoot">
+  <h2>常见问题</h2>
+
+  <h3>Q: Render 部署后访问报 502 / 超时？</h3>
+  <p>A: 免费套餐冷启动需要 30-60 秒，等待 1 分钟后重试。查看 Render Dashboard 的 Logs 页面确认服务已启动。</p>
+
+  <h3>Q: Render 数据库 90 天后过期怎么办？</h3>
+  <p>A: Render 免费 PostgreSQL 有 90 天有效期。到期前 Render 会发邮件提醒。可以创建新的 PostgreSQL 实例，修改 <code>DATABASE_URL</code> 环境变量指向新数据库，应用重启后会自动建表。或者迁移到 Fly.io 方案（数据不丢失）。</p>
+
+  <h3>Q: AI 对话返回 500 错误？</h3>
+  <p>A: 检查 <code>LLM_API_KEY</code> 环境变量是否正确设置。查看 Logs 中的错误信息。智谱 API Key 需要在智谱开放平台获取。</p>
+
+  <h3>Q: 限流 429 错误？</h3>
+  <p>A: 默认每设备每天 200 次请求。可在 Render/Fly 环境变量中调整 <code>DAILY_REQUEST_LIMIT</code>。</p>
+
+  <h3>Q: TUI 启动后显示"无法连接服务器"？</h3>
+  <p>A: 检查 <code>~/.ask-tui/config.json</code> 中的 <code>api_base_url</code> 是否正确。如果是 Render 免费套餐，可能是服务在休眠，等待 1 分钟后重试。</p>
+
+  <h3>Q: 如何更新已部署的服务？</h3>
+  <p>A: 将新代码推送到 GitHub main 分支，Render 会自动重新部署。Fly.io 使用 <code>flyctl deploy</code> 更新。</p>
+</section>
+
+<div class="footer">
+  ask-tui v0.3.0 部署指南 · Render + Fly.io 双方案 · 117 tests passed
+</div>
+
+</div>
+</body>
+</html>
